@@ -307,7 +307,16 @@ def create_tables():
         subscription TEXT DEFAULT 'none',
         wallet_balance REAL DEFAULT 0.0,
         handle TEXT UNIQUE,
-        badge TEXT DEFAULT 'none'
+        badge TEXT DEFAULT 'none',
+        is_private INTEGER DEFAULT 0,
+        allow_messages INTEGER DEFAULT 1,
+        hide_followers INTEGER DEFAULT 0,
+        verification_code TEXT,
+        is_verified INTEGER DEFAULT 0,
+        is_approved INTEGER DEFAULT 1,
+        verification_sent_at TIMESTAMP,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        about_me TEXT DEFAULT ''
     )""")
     try:
         conn.execute("ALTER TABLE users ADD COLUMN subscription TEXT DEFAULT 'none'")
