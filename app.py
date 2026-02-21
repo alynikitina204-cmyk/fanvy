@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, flash
 from markupsafe import Markup
 import sqlite3, os, uuid, re
+from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
 import storage  # Storage integration (Supabase or local)
@@ -8,6 +9,10 @@ import email_service  # Email sending service
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # Sessions last 30 days
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True if using HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 ADMIN_EMAIL = "ho.swag@mail.ru"
 
 # socketio = SocketIO(app, cors_allowed_origins="*")  # Disabled for deployment
@@ -864,6 +869,8 @@ def login():
                 flash("Your account is pending admin approval.", "error")
                 return render_template("login.html")
             
+            # Make session permanent so it persists across browser restarts
+            session.permanent = True
             session["user_id"] = user["id"]
             session["username"] = user["username"]
             session["email"] = user["email"]
