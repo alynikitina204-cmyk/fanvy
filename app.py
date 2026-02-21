@@ -301,31 +301,43 @@ def get_subscription(conn, user_id):
 # Database
 # -----------------------
 def create_tables():
-    # Always check database schema on startup and recreate if outdated
+    # Only recreate database if schema is actually outdated
+    schema_valid = True
     if os.path.exists("users.db"):
         try:
-            # Check if database has correct schema
             conn = sqlite3.connect("users.db")
             
-            # Check if likes table exists
-            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='likes'")
-            likes_exists = cursor.fetchone() is not None
+            # Check all required tables exist
+            required_tables = ['users', 'posts', 'likes', 'messages', 'applications', 'notifications']
+            for table in required_tables:
+                cursor = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
+                if cursor.fetchone() is None:
+                    print(f"⚠️  Missing table: {table}")
+                    schema_valid = False
+                    break
             
-            # Check if applications table exists
-            cursor_apps = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='applications'")
-            applications_exists = cursor_apps.fetchone() is not None
-            
-            # Check messages table has is_read column
-            cursor2 = conn.execute("PRAGMA table_info(messages)")
-            columns = [row[1] for row in cursor2.fetchall()]
-            has_is_read = "is_read" in columns
+            # Check critical columns exist
+            if schema_valid:
+                cursor = conn.execute("PRAGMA table_info(messages)")
+                msg_columns = [row[1] for row in cursor.fetchall()]
+                if "is_read" not in msg_columns:
+                    print("⚠️  Missing is_read column in messages")
+                    schema_valid = False
+                
+                cursor = conn.execute("PRAGMA table_info(users)")
+                user_columns = [row[1] for row in cursor.fetchall()]
+                if "interests" not in user_columns or "about_me" not in user_columns:
+                    print("⚠️  Missing columns in users table")
+                    schema_valid = False
             
             conn.close()
             
-            # If schema is outdated, recreate database
-            if not likes_exists or not has_is_read or not applications_exists:
-                print("⚠️  Old database schema detected, recreating...")
+            # Only recreate if schema is invalid
+            if not schema_valid:
+                print("⚠️  Database schema is outdated, recreating...")
                 os.remove("users.db")
+            else:
+                print("✅ Database schema is up to date")
         except Exception as e:
             print(f"⚠️  Database check error: {e}, recreating...")
             try:
