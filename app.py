@@ -526,6 +526,10 @@ def create_tables():
         content TEXT,
         sticker TEXT,
         money_amount REAL,
+        image TEXT,
+        music TEXT,
+        music_title TEXT,
+        is_read INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
     try:
@@ -546,6 +550,10 @@ def create_tables():
         pass
     try:
         conn.execute("ALTER TABLE messages ADD COLUMN music_title TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
 
