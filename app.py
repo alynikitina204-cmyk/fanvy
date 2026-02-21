@@ -1785,6 +1785,13 @@ def profile():
         "SELECT * FROM users WHERE id=?",
         (session["user_id"],)
     ).fetchone()
+    
+    # If user not found (database was recreated), clear session and redirect to login
+    if not user:
+        conn.close()
+        session.clear()
+        flash("Please login again.", "info")
+        return redirect("/login")
 
     # Update profile
     if request.method == "POST":
