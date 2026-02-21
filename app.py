@@ -37,42 +37,58 @@ def inject_notifications():
         )
     
     user_id = session['user_id']
-    conn = get_db_connection()
     
-    # Count unread messages
-    unread_messages = conn.execute("""
-        SELECT COUNT(*) as count FROM messages 
-        WHERE receiver_id=? AND is_read=0
-    """, (user_id,)).fetchone()
-    unread_messages_count = unread_messages['count'] if unread_messages else 0
-    
-    # Count pending friend requests (received, not sent)
-    friend_requests = conn.execute("""
-        SELECT COUNT(*) as count FROM friendships 
-        WHERE friend_id=? AND status='pending'
-    """, (user_id,)).fetchone()
-    friend_requests_count = friend_requests['count'] if friend_requests else 0
-    
-    # Count new followers (last 7 days) - only for users with subscription
-    new_followers_count = 0
     try:
-        user = conn.execute("SELECT subscription FROM users WHERE id=?", (user_id,)).fetchone()
-        if user and user['subscription'] in ['basic', 'pro', 'premium']:
-            new_followers = conn.execute("""
-                SELECT COUNT(*) as count FROM followers 
-                WHERE following_id=? AND created_at >= datetime('now', '-7 days')
+        conn = get_db_connection()
+        
+        # Count unread messages
+        try:
+            unread_messages = conn.execute("""
+                SELECT COUNT(*) as count FROM messages 
+                WHERE receiver_id=? AND is_read=0
             """, (user_id,)).fetchone()
-            new_followers_count = new_followers['count'] if new_followers else 0
-    except:
-        pass
-    
-    conn.close()
-    
-    return dict(
-        unread_messages_count=unread_messages_count,
-        friend_requests_count=friend_requests_count,
-        new_followers_count=new_followers_count
-    )
+            unread_messages_count = unread_messages['count'] if unread_messages else 0
+        except sqlite3.OperationalError:
+            # Column might not exist yet during database migration
+            unread_messages_count = 0
+        
+        # Count pending friend requests (received, not sent)
+        try:
+            friend_requests = conn.execute("""
+                SELECT COUNT(*) as count FROM friendships 
+                WHERE friend_id=? AND status='pending'
+            """, (user_id,)).fetchone()
+            friend_requests_count = friend_requests['count'] if friend_requests else 0
+        except sqlite3.OperationalError:
+            friend_requests_count = 0
+        
+        # Count new followers (last 7 days) - only for users with subscription
+        new_followers_count = 0
+        try:
+            user = conn.execute("SELECT subscription FROM users WHERE id=?", (user_id,)).fetchone()
+            if user and user['subscription'] in ['basic', 'pro', 'premium']:
+                new_followers = conn.execute("""
+                    SELECT COUNT(*) as count FROM followers 
+                    WHERE following_id=? AND created_at >= datetime('now', '-7 days')
+                """, (user_id,)).fetchone()
+                new_followers_count = new_followers['count'] if new_followers else 0
+        except:
+            pass
+        
+        conn.close()
+        
+        return dict(
+            unread_messages_count=unread_messages_count,
+            friend_requests_count=friend_requests_count,
+            new_followers_count=new_followers_count
+        )
+    except Exception as e:
+        print(f"⚠️  Error in inject_notifications: {e}")
+        return dict(
+            unread_messages_count=0,
+            friend_requests_count=0,
+            new_followers_count=0
+        )
 
 # -----------------------
 # Online Status Tracking
