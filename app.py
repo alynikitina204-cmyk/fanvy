@@ -308,10 +308,15 @@ def create_tables():
             conn = sqlite3.connect("users.db")
             cursor = conn.execute("PRAGMA table_info(messages)")
             columns = [row[1] for row in cursor.fetchall()]
+            
+            # Check if likes table exists
+            cursor2 = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='likes'")
+            likes_exists = cursor2.fetchone() is not None
+            
             conn.close()
             
-            # If is_read column missing, recreate database
-            if "is_read" not in columns:
+            # If is_read column missing or likes table missing, recreate database
+            if "is_read" not in columns or not likes_exists:
                 print("⚠️  Old database schema detected, recreating...")
                 os.remove("users.db")
         except:
@@ -530,6 +535,15 @@ def create_tables():
         user_id INTEGER,
         content TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS likes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        post_id INTEGER,
+        user_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(post_id, user_id)
     )""")
 
     conn.execute("""
