@@ -359,6 +359,10 @@ def create_tables():
         conn.execute("ALTER TABLE users ADD COLUMN last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN about_me TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
     # Update any null values
     try:
         conn.execute("UPDATE users SET handle = LOWER(REPLACE(username, ' ', '_')) WHERE handle IS NULL OR handle = ''")
@@ -372,6 +376,7 @@ def create_tables():
     conn.execute("UPDATE users SET hide_followers=0 WHERE hide_followers IS NULL")
     conn.execute("UPDATE users SET is_verified=0 WHERE is_verified IS NULL")
     conn.execute("UPDATE users SET is_approved=1 WHERE is_approved IS NULL")
+    conn.execute("UPDATE users SET about_me='' WHERE about_me IS NULL")
     
     # Give admin $1000 for testing and verify/approve admin
     conn.execute("UPDATE users SET wallet_balance=1000.0, is_verified=1, is_approved=1 WHERE id=1")
