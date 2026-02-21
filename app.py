@@ -301,6 +301,22 @@ def get_subscription(conn, user_id):
 # Database
 # -----------------------
 def create_tables():
+    # On first startup in production, ensure fresh database with correct schema
+    if os.environ.get("RENDER") and os.path.exists("users.db"):
+        try:
+            # Check if database has correct schema
+            conn = sqlite3.connect("users.db")
+            cursor = conn.execute("PRAGMA table_info(messages)")
+            columns = [row[1] for row in cursor.fetchall()]
+            conn.close()
+            
+            # If is_read column missing, recreate database
+            if "is_read" not in columns:
+                print("⚠️  Old database schema detected, recreating...")
+                os.remove("users.db")
+        except:
+            pass
+    
     conn = get_db_connection()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS album_images (
