@@ -24,10 +24,13 @@ except (ImportError, Exception) as e:
     class MockConfig:
         EMAIL_ENABLED = False
         EMAIL_ADDRESS = "noreply@example.com"
+        EMAIL_PASSWORD = ""
         EMAIL_FROM_NAME = "Fanvy"
         EMAIL_SUBJECT_VERIFICATION = "Verify Your Email - Fanvy"
         SMTP_SERVER = "smtp.gmail.com"
         SMTP_PORT = 587
+        APP_NAME = "Fanvy"
+        APP_URL = "http://localhost:5000"
     email_config = MockConfig()
 
 def send_verification_email(to_email, username, verification_code):
