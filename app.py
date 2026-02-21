@@ -2487,97 +2487,97 @@ def upload_message_file():
 
 # @socketio.on('send_message')  # Disabled for deployment
 # def handle_send_message(data):
-    try:
-        sender   = data.get('sender')
-        receiver = data.get('receiver')
-        content  = data.get('content')
-        sticker  = data.get('sticker')
-        money_amount = data.get('money_amount')
-        image    = data.get('image')
-        music    = data.get('music')
-        music_title = data.get('music_title')
-
-        if not sender or not receiver:
-            # emit('error', {'message': 'Invalid sender or receiver'})  # Disabled
-            return
-
-        conn = get_db_connection()
-        
-        # Check if receiver allows messages
-        receiver_user = conn.execute(
-            "SELECT allow_messages FROM users WHERE id=?",
-            (receiver,)
-        ).fetchone()
-        
-        if receiver_user and not receiver_user['allow_messages']:
-            conn.close()
-            # emit('message_blocked', {'error': 'This user has disabled direct messages'})  # Disabled
-            return
-        
-        # If sending money, verify balance and process transfer
-        if money_amount and float(money_amount) > 0:
-            sender_user = conn.execute(
-                "SELECT wallet_balance, subscription FROM users WHERE id=?",
-                (sender,)
-            ).fetchone()
-            
-            # Check if user has Pro or Premium subscription
-            if sender_user['subscription'] not in ('pro', 'premium'):
-                conn.close()
-                return
-            
-            amount = float(money_amount)
-            if sender_user['wallet_balance'] < amount:
-                conn.close()
-                return
-            
-            # Deduct from sender
-            conn.execute(
-                "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?",
-                (amount, sender)
-            )
-            
-            # Add to receiver
-            conn.execute(
-                "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
-                (amount, receiver)
-            )
-            
-            # Record transactions
-            conn.execute(
-                "INSERT INTO transactions (user_id, type, amount, description) VALUES (?, 'transfer_out', ?, ?)",
-                (sender, -amount, f"Sent to user #{receiver}")
-            )
-            conn.execute(
-                "INSERT INTO transactions (user_id, type, amount, description) VALUES (?, 'transfer_in', ?, ?)",
-                (receiver, amount, f"Received from user #{sender}")
-            )
-        
-        cur = conn.execute("""
-            INSERT INTO messages (sender_id, receiver_id, content, sticker, money_amount, image, music, music_title)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (sender, receiver, content, sticker, money_amount, image, music, music_title))
-        conn.commit()
-        msg_id = cur.lastrowid
-        conn.close()
-
-        room = f"chat_{min(sender,receiver)}_{max(sender,receiver)}"
-
-        # emit("receive_message", {  # Disabled for deployment
-        #     "id": msg_id,
-        #     "sender": sender,
-        #     "content": content,
-        #     "sticker": sticker,
-        #     "money_amount": money_amount,
-        #     "image": image,
-        #     "music": music,
-        #     "music_title": music_title
-        # }, room=room)
-    except Exception as e:
-        import traceback
-        print(f"Error in handle_send_message: {e}")
-        traceback.print_exc()
-        # emit('error', {'message': str(e)})  # Disabled
+#     try:
+#         sender   = data.get('sender')
+#         receiver = data.get('receiver')
+#         content  = data.get('content')
+#         sticker  = data.get('sticker')
+#         money_amount = data.get('money_amount')
+#         image    = data.get('image')
+#         music    = data.get('music')
+#         music_title = data.get('music_title')
+# 
+#         if not sender or not receiver:
+#             emit('error', {'message': 'Invalid sender or receiver'})
+#             return
+# 
+#         conn = get_db_connection()
+#         
+#         # Check if receiver allows messages
+#         receiver_user = conn.execute(
+#             "SELECT allow_messages FROM users WHERE id=?",
+#             (receiver,)
+#         ).fetchone()
+#         
+#         if receiver_user and not receiver_user['allow_messages']:
+#             conn.close()
+#             emit('message_blocked', {'error': 'This user has disabled direct messages'})
+#             return
+#         
+#         # If sending money, verify balance and process transfer
+#         if money_amount and float(money_amount) > 0:
+#             sender_user = conn.execute(
+#                 "SELECT wallet_balance, subscription FROM users WHERE id=?",
+#                 (sender,)
+#             ).fetchone()
+#             
+#             # Check if user has Pro or Premium subscription
+#             if sender_user['subscription'] not in ('pro', 'premium'):
+#                 conn.close()
+#                 return
+#             
+#             amount = float(money_amount)
+#             if sender_user['wallet_balance'] < amount:
+#                 conn.close()
+#                 return
+#             
+#             # Deduct from sender
+#             conn.execute(
+#                 "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?",
+#                 (amount, sender)
+#             )
+#             
+#             # Add to receiver
+#             conn.execute(
+#                 "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
+#                 (amount, receiver)
+#             )
+#             
+#             # Record transactions
+#             conn.execute(
+#                 "INSERT INTO transactions (user_id, type, amount, description) VALUES (?, 'transfer_out', ?, ?)",
+#                 (sender, -amount, f"Sent to user #{receiver}")
+#             )
+#             conn.execute(
+#                 "INSERT INTO transactions (user_id, type, amount, description) VALUES (?, 'transfer_in', ?, ?)",
+#                 (receiver, amount, f"Received from user #{sender}")
+#             )
+#         
+#         cur = conn.execute("""
+#             INSERT INTO messages (sender_id, receiver_id, content, sticker, money_amount, image, music, music_title)
+#             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+#         """, (sender, receiver, content, sticker, money_amount, image, music, music_title))
+#         conn.commit()
+#         msg_id = cur.lastrowid
+#         conn.close()
+# 
+#         room = f"chat_{min(sender,receiver)}_{max(sender,receiver)}"
+# 
+#         emit("receive_message", {
+#             "id": msg_id,
+#             "sender": sender,
+#             "content": content,
+#             "sticker": sticker,
+#             "money_amount": money_amount,
+#             "image": image,
+#             "music": music,
+#             "music_title": music_title
+#         }, room=room)
+#     except Exception as e:
+#         import traceback
+#         print(f"Error in handle_send_message: {e}")
+#         traceback.print_exc()
+#         emit('error', {'message': str(e)})
 
 
 # -----------------------
@@ -2585,103 +2585,98 @@ def upload_message_file():
 # -----------------------
 # @socketio.on('join_watch_room')  # Disabled for deployment
 # def handle_join_watch_room(data):
-    room_id = data.get('room_id')
-    user_id = data.get('user_id')
-    username = data.get('username')
-    
-    if not room_id:
-        return
-    
-    room = f"watch_{room_id}"
-    join_room(room)
-    
-    # Notify others that user joined
-    # emit('user_joined', {  # Disabled
-    #     'user_id': user_id,
-    #     'username': username,
-    #     'message': f'{username} joined the watch party'
-    # }, room=room, include_self=False)
-    pass  # Placeholder
+#     room_id = data.get('room_id')
+#     user_id = data.get('user_id')
+#     username = data.get('username')
+#     
+#     if not room_id:
+#         return
+#     
+#     room = f"watch_{room_id}"
+#     join_room(room)
+#     
+#     # Notify others that user joined
+#     emit('user_joined', {
+#         'user_id': user_id,
+#         'username': username,
+#         'message': f'{username} joined the watch party'
+#     }, room=room, include_self=False)
 
 
 # @socketio.on('video_play')  # Disabled for deployment
 # def handle_video_play(data):
-    room_id = data.get('room_id')
-    current_time = data.get('current_time', 0)
-    
-    if not room_id:
-        return
-    
-    # Update database
-    conn = get_db_connection()
-    conn.execute("""
-        UPDATE watch_rooms SET is_playing=1, current_time=? WHERE id=?
-    """, (current_time, room_id))
-    conn.commit()
-    conn.close()
-    
-    room = f"watch_{room_id}"
-    # emit('sync_play', {'current_time': current_time}, room=room, include_self=False)  # Disabled
-    pass  # Placeholder
+#     room_id = data.get('room_id')
+#     current_time = data.get('current_time', 0)
+#     
+#     if not room_id:
+#         return
+#     
+#     # Update database
+#     conn = get_db_connection()
+#     conn.execute("""
+#         UPDATE watch_rooms SET is_playing=1, current_time=? WHERE id=?
+#     """, (current_time, room_id))
+#     conn.commit()
+#     conn.close()
+#     
+#     room = f"watch_{room_id}"
+#     emit('sync_play', {'current_time': current_time}, room=room, include_self=False)
 
 
 # @socketio.on('video_pause')  # Disabled for deployment
 # def handle_video_pause(data):
-    room_id = data.get('room_id')
-    current_time = data.get('current_time', 0)
-    
-    if not room_id:
-        return
-    
-    # Update database
-    conn = get_db_connection()
-    conn.execute("""
-        UPDATE watch_rooms SET is_playing=0, current_time=? WHERE id=?
-    """, (current_time, room_id))
-    conn.commit()
-    conn.close()
-    
-    room = f"watch_{room_id}"
-    # emit('sync_pause', {'current_time': current_time}, room=room, include_self=False)  # Disabled
-    pass  # Placeholder
+#     room_id = data.get('room_id')
+#     current_time = data.get('current_time', 0)
+#     
+#     if not room_id:
+#         return
+#     
+#     # Update database
+#     conn = get_db_connection()
+#     conn.execute("""
+#         UPDATE watch_rooms SET is_playing=0, current_time=? WHERE id=?
+#     """, (current_time, room_id))
+#     conn.commit()
+#     conn.close()
+#     
+#     room = f"watch_{room_id}"
+#     emit('sync_pause', {'current_time': current_time}, room=room, include_self=False)
 
 
 # @socketio.on('video_seek')  # Disabled for deployment
 # def handle_video_seek(data):
-    room_id = data.get('room_id')
-    current_time = data.get('current_time', 0)
-    
-    if not room_id:
-        return
-    
-    # Update database
-    conn = get_db_connection()
-    conn.execute("""
-        UPDATE watch_rooms SET current_time=? WHERE id=?
-    """, (current_time, room_id))
-    conn.commit()
-    conn.close()
-    
-    room = f"watch_{room_id}"
-    # emit('sync_seek', {'current_time': current_time}, room=room, include_self=False)  # Disabled
-    pass  # Placeholder
+#     room_id = data.get('room_id')
+#     current_time = data.get('current_time', 0)
+#     
+#     if not room_id:
+#         return
+#     
+#     # Update database
+#     conn = get_db_connection()
+#     conn.execute("""
+#         UPDATE watch_rooms SET current_time=? WHERE id=?
+#     """, (current_time, room_id))
+#     conn.commit()
+#     conn.close()
+#     
+#     room = f"watch_{room_id}"
+#     emit('sync_seek', {'current_time': current_time}, room=room, include_self=False)
 
 
 # @socketio.on('watch_chat_message')  # Disabled for deployment
 # def handle_watch_chat(data):
-    room_id = data.get('room_id')
-    username = data.get('username')
-    message = data.get('message', '').strip()
-    
-    if not room_id or not message:
-        return
-    
-    room = f"watch_{room_id}"
-    # emit('watch_chat_receive', {  # Disabled
-    #     'username': username,
-    #     'message': message
-    # }, room=room)
-    pass  # Placeholder
+#     room_id = data.get('room_id')
+#     username = data.get('username')
+#     message = data.get('message', '').strip()
+#     
+#     if not room_id or not message:
+#         return
+#     
+#     room = f"watch_{room_id}"
+#     emit('watch_chat_receive', {
+#         'username': username,
+#         'message': message
+#     }, room=room)
 
 
 @app.route('/messages/edit/<int:msg_id>', methods=['POST'])
