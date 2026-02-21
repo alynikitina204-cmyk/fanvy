@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, session, jsonify, f
 from markupsafe import Markup
 import sqlite3, os, uuid, re
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_socketio import SocketIO, emit, join_room
+# from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
 import storage  # Supabase Storage integration
 import email_service  # Email sending service
 
@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
 ADMIN_EMAIL = "ho.swag@mail.ru"
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+# socketio = SocketIO(app, cors_allowed_origins="*")  # Disabled for deployment
 
 # Jinja filter for file URLs (Supabase or local)
 @app.template_filter('file_url')
@@ -2480,13 +2480,13 @@ def upload_message_file():
     
     return {"success": True, "filepath": filepath, "filename": file.filename}
 
-@socketio.on('join')
-def handle_join(data):
-    join_room(data['room'])
+# @socketio.on('join')  # Disabled for deployment
+# def handle_join(data):
+#     join_room(data['room'])
 
 
-@socketio.on('send_message')
-def handle_send_message(data):
+# @socketio.on('send_message')  # Disabled for deployment
+# def handle_send_message(data):
     try:
         sender   = data.get('sender')
         receiver = data.get('receiver')
@@ -2498,7 +2498,7 @@ def handle_send_message(data):
         music_title = data.get('music_title')
 
         if not sender or not receiver:
-            emit('error', {'message': 'Invalid sender or receiver'})
+            # emit('error', {'message': 'Invalid sender or receiver'})  # Disabled
             return
 
         conn = get_db_connection()
@@ -2511,7 +2511,7 @@ def handle_send_message(data):
         
         if receiver_user and not receiver_user['allow_messages']:
             conn.close()
-            emit('message_blocked', {'error': 'This user has disabled direct messages'})
+            # emit('message_blocked', {'error': 'This user has disabled direct messages'})  # Disabled
             return
         
         # If sending money, verify balance and process transfer
@@ -2563,28 +2563,28 @@ def handle_send_message(data):
 
         room = f"chat_{min(sender,receiver)}_{max(sender,receiver)}"
 
-        emit("receive_message", {
-            "id": msg_id,
-            "sender": sender,
-            "content": content,
-            "sticker": sticker,
-            "money_amount": money_amount,
-            "image": image,
-            "music": music,
-            "music_title": music_title
-        }, room=room)
+        # emit("receive_message", {  # Disabled for deployment
+        #     "id": msg_id,
+        #     "sender": sender,
+        #     "content": content,
+        #     "sticker": sticker,
+        #     "money_amount": money_amount,
+        #     "image": image,
+        #     "music": music,
+        #     "music_title": music_title
+        # }, room=room)
     except Exception as e:
         import traceback
         print(f"Error in handle_send_message: {e}")
         traceback.print_exc()
-        emit('error', {'message': str(e)})
+        # emit('error', {'message': str(e)})  # Disabled
 
 
 # -----------------------
 # Watch Together WebSocket Events
 # -----------------------
-@socketio.on('join_watch_room')
-def handle_join_watch_room(data):
+# @socketio.on('join_watch_room')  # Disabled for deployment
+# def handle_join_watch_room(data):
     room_id = data.get('room_id')
     user_id = data.get('user_id')
     username = data.get('username')
@@ -2596,15 +2596,16 @@ def handle_join_watch_room(data):
     join_room(room)
     
     # Notify others that user joined
-    emit('user_joined', {
-        'user_id': user_id,
-        'username': username,
-        'message': f'{username} joined the watch party'
-    }, room=room, include_self=False)
+    # emit('user_joined', {  # Disabled
+    #     'user_id': user_id,
+    #     'username': username,
+    #     'message': f'{username} joined the watch party'
+    # }, room=room, include_self=False)
+    pass  # Placeholder
 
 
-@socketio.on('video_play')
-def handle_video_play(data):
+# @socketio.on('video_play')  # Disabled for deployment
+# def handle_video_play(data):
     room_id = data.get('room_id')
     current_time = data.get('current_time', 0)
     
@@ -2620,11 +2621,12 @@ def handle_video_play(data):
     conn.close()
     
     room = f"watch_{room_id}"
-    emit('sync_play', {'current_time': current_time}, room=room, include_self=False)
+    # emit('sync_play', {'current_time': current_time}, room=room, include_self=False)  # Disabled
+    pass  # Placeholder
 
 
-@socketio.on('video_pause')
-def handle_video_pause(data):
+# @socketio.on('video_pause')  # Disabled for deployment
+# def handle_video_pause(data):
     room_id = data.get('room_id')
     current_time = data.get('current_time', 0)
     
@@ -2640,11 +2642,12 @@ def handle_video_pause(data):
     conn.close()
     
     room = f"watch_{room_id}"
-    emit('sync_pause', {'current_time': current_time}, room=room, include_self=False)
+    # emit('sync_pause', {'current_time': current_time}, room=room, include_self=False)  # Disabled
+    pass  # Placeholder
 
 
-@socketio.on('video_seek')
-def handle_video_seek(data):
+# @socketio.on('video_seek')  # Disabled for deployment
+# def handle_video_seek(data):
     room_id = data.get('room_id')
     current_time = data.get('current_time', 0)
     
@@ -2660,11 +2663,12 @@ def handle_video_seek(data):
     conn.close()
     
     room = f"watch_{room_id}"
-    emit('sync_seek', {'current_time': current_time}, room=room, include_self=False)
+    # emit('sync_seek', {'current_time': current_time}, room=room, include_self=False)  # Disabled
+    pass  # Placeholder
 
 
-@socketio.on('watch_chat_message')
-def handle_watch_chat(data):
+# @socketio.on('watch_chat_message')  # Disabled for deployment
+# def handle_watch_chat(data):
     room_id = data.get('room_id')
     username = data.get('username')
     message = data.get('message', '').strip()
@@ -2673,10 +2677,11 @@ def handle_watch_chat(data):
         return
     
     room = f"watch_{room_id}"
-    emit('watch_chat_receive', {
-        'username': username,
-        'message': message
-    }, room=room)
+    # emit('watch_chat_receive', {  # Disabled
+    #     'username': username,
+    #     'message': message
+    # }, room=room)
+    pass  # Placeholder
 
 
 @app.route('/messages/edit/<int:msg_id>', methods=['POST'])
@@ -2711,10 +2716,10 @@ def edit_message(msg_id):
     conn.close()
     
     # Notify via Socket.IO
-    socketio.emit("message_edited", {
-        "id": msg_id,
-        "content": new_content
-    }, broadcast=True)
+    # socketio.emit("message_edited", {  # Disabled for deployment
+    #     "id": msg_id,
+    #     "content": new_content
+    # }, broadcast=True)
     
     return jsonify({"success": True})
 
@@ -2745,9 +2750,9 @@ def delete_message(msg_id):
     conn.close()
     
     # Notify via Socket.IO
-    socketio.emit("message_deleted", {
-        "id": msg_id
-    }, broadcast=True)
+    # socketio.emit("message_deleted", {  # Disabled for deployment
+    #     "id": msg_id
+    # }, broadcast=True)
     
     return jsonify({"success": True})
 
@@ -3096,4 +3101,4 @@ def api_check_user_online(user_id):
 # -----------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True)
