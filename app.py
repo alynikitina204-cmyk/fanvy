@@ -6,6 +6,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
 import storage  # Storage integration (Supabase or local)
 import email_service  # Email sending service
+import db_schema  # Database schema for both SQLite and PostgreSQL
+
+# Database imports - support both SQLite (local) and PostgreSQL (production)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    import psycopg2
+    import psycopg2.extras
+    USE_POSTGRES = True
+else:
+    USE_POSTGRES = False
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
@@ -291,9 +301,26 @@ def allowed_file(filename):
 
 
 def get_db_connection():
-    conn = sqlite3.connect("users.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Get database connection - PostgreSQL (production) or SQLite (local)"""
+    if USE_POSTGRES:
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        return conn
+    else:
+        conn = sqlite3.connect("users.db")
+        conn.row_factory = sqlite3.Row
+        return conn
+
+def execute_query(conn, query, params=()):
+    """Execute query with proper cursor handling for both databases"""
+    if USE_POSTGRES:
+        # PostgreSQL uses %s placeholders, convert ? to %s
+        query = query.replace("?", "%s")
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        return cursor
+    else:
+        # SQLite uses ? placeholders (default)
+        return conn.execute(query, params)
 
 def get_current_user():
     """Get current logged-in user from database. Returns None if not found."""
@@ -306,7 +333,7 @@ def get_current_user():
     return user
 
 def get_subscription(conn, user_id):
-    row = conn.execute(
+    row = execute_query(conn,
         "SELECT subscription FROM users WHERE id=?",
         (user_id,)
     ).fetchone()
@@ -316,16 +343,38 @@ def get_subscription(conn, user_id):
 # Database
 # -----------------------
 def create_tables():
+    conn = get_db_connection()
+    
+    # PostgreSQL: Use simplified schema
+    if USE_POSTGRES:
+        print("🐘 Creating PostgreSQL tables...")
+        try:
+            cursor = conn.cursor()
+            # Create all tables from schema
+            for table_name, create_sql in db_schema.TABLES.items():
+                cursor.execute(create_sql)
+            conn.commit()
+            # Give first user admin privileges and balance
+            cursor.execute("UPDATE users SET wallet_balance=1000.0, is_verified=true, is_approved=true WHERE id=1")
+            conn.commit()
+            cursor.close()
+            print("✅ PostgreSQL tables created successfully")
+            return
+        except Exception as e:
+            print(f"⚠️  PostgreSQL table creation error: {e}")
+            conn.rollback()
+    
+    # SQLite: Use existing logic with validation
     # Only recreate database if schema is actually outdated
     schema_valid = True
     if os.path.exists("users.db"):
         try:
-            conn = sqlite3.connect("users.db")
+            check_conn = sqlite3.connect("users.db")
             
             # Check all required tables exist
             required_tables = ['users', 'posts', 'likes', 'messages', 'applications', 'notifications']
             for table in required_tables:
-                cursor = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
+                cursor = check_conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
                 if cursor.fetchone() is None:
                     print(f"⚠️  Missing table: {table}")
                     schema_valid = False
@@ -333,19 +382,19 @@ def create_tables():
             
             # Check critical columns exist
             if schema_valid:
-                cursor = conn.execute("PRAGMA table_info(messages)")
+                cursor = check_conn.execute("PRAGMA table_info(messages)")
                 msg_columns = [row[1] for row in cursor.fetchall()]
                 if "is_read" not in msg_columns:
                     print("⚠️  Missing is_read column in messages")
                     schema_valid = False
                 
-                cursor = conn.execute("PRAGMA table_info(users)")
+                cursor = check_conn.execute("PRAGMA table_info(users)")
                 user_columns = [row[1] for row in cursor.fetchall()]
                 if "interests" not in user_columns or "about_me" not in user_columns:
                     print("⚠️  Missing columns in users table")
                     schema_valid = False
             
-            conn.close()
+            check_conn.close()
             
             # Only recreate if schema is invalid
             if not schema_valid:
