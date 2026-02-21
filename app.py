@@ -311,6 +311,10 @@ def create_tables():
             cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='likes'")
             likes_exists = cursor.fetchone() is not None
             
+            # Check if applications table exists
+            cursor_apps = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='applications'")
+            applications_exists = cursor_apps.fetchone() is not None
+            
             # Check messages table has is_read column
             cursor2 = conn.execute("PRAGMA table_info(messages)")
             columns = [row[1] for row in cursor2.fetchall()]
@@ -319,7 +323,7 @@ def create_tables():
             conn.close()
             
             # If schema is outdated, recreate database
-            if not likes_exists or not has_is_read:
+            if not likes_exists or not has_is_read or not applications_exists:
                 print("⚠️  Old database schema detected, recreating...")
                 os.remove("users.db")
         except Exception as e:
@@ -651,6 +655,18 @@ def create_tables():
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(room_id, user_id)
     )""")
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        application_type TEXT,
+        reason TEXT,
+        experience TEXT,
+        contact TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
     
     # Add is_private column if it doesn't exist
     try:
@@ -931,9 +947,13 @@ def dashboard():
     pending_apps = 0
     pending_users = 0
     if session.get("user_id") == 1:
-        pending_apps = conn.execute("""
-            SELECT COUNT(*) FROM applications WHERE status='pending'
-        """).fetchone()[0]
+        try:
+            pending_apps = conn.execute("""
+                SELECT COUNT(*) FROM applications WHERE status='pending'
+            """).fetchone()[0]
+        except sqlite3.OperationalError:
+            # Table might not exist yet during database migration
+            pending_apps = 0
         
         pending_users = conn.execute("""
             SELECT COUNT(*) FROM users WHERE is_approved=0 AND is_verified=1
