@@ -18,12 +18,21 @@ except ImportError:
 try:
     import config
 except ImportError:
-    print("⚠️  config.py not found - using local storage only")
+    print("⚠️  config.py not found - using environment variables or local storage")
     # Create mock config
     class MockConfig:
-        SUPABASE_URL = "YOUR_SUPABASE_URL"
-        SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
+        SUPABASE_URL = os.environ.get("SUPABASE_URL", "YOUR_SUPABASE_URL")
+        SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "YOUR_SUPABASE_ANON_KEY")
+        BUCKET_AVATARS = "avatars"
+        BUCKET_UPLOADS = "uploads"
+        BUCKET_MUSIC = "music"
+        BUCKET_STORIES = "stories"
+        BUCKET_IMAGES = "images"
     config = MockConfig()
+
+# Also check environment variables (for Render deployment)
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or getattr(config, 'SUPABASE_URL', None)
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or getattr(config, 'SUPABASE_KEY', None)
 
 # Check if Supabase is configured
 SUPABASE_ENABLED = False
@@ -32,14 +41,14 @@ supabase = None
 if SUPABASE_LIB_AVAILABLE:
     try:
         SUPABASE_ENABLED = (
-            hasattr(config, 'SUPABASE_URL') and 
-            hasattr(config, 'SUPABASE_KEY') and
-            config.SUPABASE_URL != "YOUR_SUPABASE_URL" and
-            config.SUPABASE_KEY != "YOUR_SUPABASE_ANON_KEY"
+            SUPABASE_URL and 
+            SUPABASE_KEY and
+            SUPABASE_URL != "YOUR_SUPABASE_URL" and
+            SUPABASE_KEY != "YOUR_SUPABASE_ANON_KEY"
         )
         
         if SUPABASE_ENABLED:
-            supabase = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
             print("✅ Supabase Storage enabled")
         else:
             print("⚠️  Supabase not configured - using local storage")

@@ -38,6 +38,7 @@ static/photos/*
 # Environment variables
 .env
 email_config.py
+config.py
 
 # Logs
 *.log
