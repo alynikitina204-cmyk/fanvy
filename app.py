@@ -301,26 +301,33 @@ def get_subscription(conn, user_id):
 # Database
 # -----------------------
 def create_tables():
-    # On first startup in production, ensure fresh database with correct schema
-    if os.environ.get("RENDER") and os.path.exists("users.db"):
+    # Always check database schema on startup and recreate if outdated
+    if os.path.exists("users.db"):
         try:
             # Check if database has correct schema
             conn = sqlite3.connect("users.db")
-            cursor = conn.execute("PRAGMA table_info(messages)")
-            columns = [row[1] for row in cursor.fetchall()]
             
             # Check if likes table exists
-            cursor2 = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='likes'")
-            likes_exists = cursor2.fetchone() is not None
+            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='likes'")
+            likes_exists = cursor.fetchone() is not None
+            
+            # Check messages table has is_read column
+            cursor2 = conn.execute("PRAGMA table_info(messages)")
+            columns = [row[1] for row in cursor2.fetchall()]
+            has_is_read = "is_read" in columns
             
             conn.close()
             
-            # If is_read column missing or likes table missing, recreate database
-            if "is_read" not in columns or not likes_exists:
+            # If schema is outdated, recreate database
+            if not likes_exists or not has_is_read:
                 print("⚠️  Old database schema detected, recreating...")
                 os.remove("users.db")
-        except:
-            pass
+        except Exception as e:
+            print(f"⚠️  Database check error: {e}, recreating...")
+            try:
+                os.remove("users.db")
+            except:
+                pass
     
     conn = get_db_connection()
     conn.execute("""
