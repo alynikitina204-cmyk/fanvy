@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Verify Email</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.verify-container {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-soft);
+}
+
+.verify-container h2 {
+    margin: 0 0 12px;
+    color: var(--accent);
+    text-align: center;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border-soft);
+    background: var(--soft-1);
+    color: var(--text);
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 4px;
+    font-weight: 600;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    background: var(--primary-gradient);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.info-box {
+    background: var(--soft-1);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border-left: 4px solid var(--accent);
+}
+
+.info-box p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.code-display {
+    background: var(--accent);
+    color: white;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin: 12px 0;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back-link a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link a:hover {
+    text-decoration: underline;
+}
+</style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="verify-container">
+    <h2>✉️ Verify Your Email</h2>
+    <p class="subtitle">Enter the 6-digit code sent to your email</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% if session.verification_code %}
+    <div class="info-box">
+        <p><strong>📧 Your verification code:</strong></p>
+        <div class="code-display">{{ session.verification_code }}</div>
+        <p style="margin-top:8px;font-size:12px;"><em>(In production, this will be sent via email)</em></p>
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Verification Code</label>
+            <input 
+                type="text" 
+                name="code" 
+                placeholder="000000" 
+                maxlength="6" 
+                pattern="[0-9]{6}" 
+                required
+                autofocus
+            >
+        </div>
+
+        <button type="submit" class="btn">Verify Account</button>
+    </form>
+
+    <div class="back-link">
+        <a href="/register">← Back to Register</a>
+    </div>
+</div>
+
+</body>
+</html>

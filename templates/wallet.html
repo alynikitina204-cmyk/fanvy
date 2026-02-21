@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wallet</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.wallet-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 30px;
+}
+.wallet-header {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 24px;
+    text-align: center;
+}
+.wallet-balance {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 12px 0;
+}
+.wallet-balance span {
+    font-size: 32px;
+    color: var(--muted);
+}
+.wallet-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 20px;
+}
+.wallet-btn {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-border);
+    padding: 12px 26px;
+    border-radius: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: background .2s, box-shadow .2s, transform .15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.wallet-btn:hover {
+    background: var(--soft-1);
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
+}
+.wallet-section {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 20px;
+}
+.wallet-section h3 {
+    margin: 0 0 18px;
+    color: var(--text);
+    font-size: 20px;
+}
+.transaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--soft-1);
+    margin-bottom: 10px;
+}
+.transaction-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.transaction-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--soft-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+}
+.transaction-details h4 {
+    margin: 0 0 4px;
+    color: var(--text);
+    font-size: 15px;
+}
+.transaction-details p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+.transaction-amount {
+    font-weight: 700;
+    font-size: 16px;
+}
+.transaction-amount.positive {
+    color: #10b981;
+}
+.transaction-amount.negative {
+    color: #ef4444;
+}
+.nav-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 20px;
+    font-size: 14px;
+    transition: color .2s;
+}
+.nav-back:hover {
+    color: var(--text);
+}
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+}
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+</style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="wallet-container">
+    <a href="/dashboard" class="nav-back">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <div class="wallet-header">
+        <div style="color:var(--muted);font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Your Balance</div>
+        <div class="wallet-balance">
+            <span>$</span>{{ "%.2f"|format(user.wallet_balance or 0) }}
+        </div>
+        <div style="color:var(--muted);font-size:13px;margin-top:8px;">Available to spend</div>
+        
+        <div class="wallet-actions">
+            <button class="wallet-btn">
+                <i class="fa-solid fa-plus"></i> Add Funds
+            </button>
+            <button class="wallet-btn">
+                <i class="fa-solid fa-arrow-up"></i> Send Money
+            </button>
+            <button class="wallet-btn">
+                <i class="fa-solid fa-arrow-down"></i> Withdraw
+            </button>
+        </div>
+    </div>
+
+    <div class="wallet-section">
+        <h3>Recent Transactions</h3>
+        
+        {% if transactions %}
+            {% for tx in transactions %}
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-icon">
+                        {% if tx.type == 'purchase' %}
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        {% elif tx.type == 'subscription' %}
+                        <i class="fa-solid fa-crown"></i>
+                        {% elif tx.type == 'credit' %}
+                        <i class="fa-solid fa-plus"></i>
+                        {% else %}
+                        <i class="fa-solid fa-arrow-right"></i>
+                        {% endif %}
+                    </div>
+                    <div class="transaction-details">
+                        <h4>{{ tx.description }}</h4>
+                        <p>{{ tx.created_at }}</p>
+                    </div>
+                </div>
+                <div class="transaction-amount {% if tx.amount >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if tx.amount >= 0 %}+{% endif %}${{ "%.2f"|format(tx.amount) }}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-receipt"></i>
+            <div>No transactions yet</div>
+            <div style="font-size:13px;margin-top:6px;">Your transaction history will appear here</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="wallet-section">
+        <h3>Payment Methods</h3>
+        <div class="empty-state">
+            <i class="fa-regular fa-credit-card"></i>
+            <div>No payment methods</div>
+            <div style="font-size:13px;margin-top:6px;">Add a card or bank account to get started</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

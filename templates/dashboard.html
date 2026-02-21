@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #393a3e, #c3c5cb, #232324);
+            background-size: 300% 300%;
+            animation: gradientMove 10s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        @keyframes gradientMove {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .dashboard-container {
+            width: 420px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(18px);
+            border-radius: 28px;
+            box-shadow: 0 15px 40px rgba(30,40,60,0.12);
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .dashboard-container:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            color: #242324;
+            font-size: 24px;
+        }
+
+        p {
+            font-size: 15px;
+            color: #7a8394;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .dashboard-buttons a {
+            text-decoration: none;
+        }
+
+        .dashboard-buttons button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s ease;
+            color: white;
+        }
+
+        .forum-btn {
+            background: linear-gradient(135deg, #3d5a80, #5c7fa3);
+        }
+
+        .profile-btn {
+            background: linear-gradient(135deg, #4a6d91, #6b8fb5);
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #5a6a7a, #7a8a9a);
+        }
+
+        .support-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .dashboard-buttons button:hover {
+            transform: scale(1.04);
+            box-shadow: 0 8px 22px rgba(61,90,128,0.22);
+            filter: brightness(1.08);
+        }
+
+        .badge {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+    <div class="dashboard-container">
+        <h2>Welcome {{ username }}</h2>
+        <p>Nice to have you here</p>
+
+        <div class="dashboard-buttons">
+            <a href="/forum"><button class="forum-btn">Go to Forum</button></a>
+            <a href="/profile"><button class="profile-btn">Edit Profile</button></a>
+            <button class="support-btn" onclick="openSupportModal()">
+                <i class="fa-solid fa-headset"></i> Apply for VIP/Ambassador/Team
+            </button>
+            {% if session.user_id == 1 %}
+            <a href="/applications"><button class="support-btn">
+                <i class="fa-solid fa-clipboard-list"></i> View Applications
+                {% if pending_apps and pending_apps > 0 %}
+                <span class="badge">{{ pending_apps }}</span>
+                {% endif %}
+            </button></a>
+            <a href="/admin/pending-users"><button class="support-btn" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
+                <i class="fa-solid fa-user-clock"></i> Pending User Approvals
+                {% if pending_users and pending_users > 0 %}
+                <span class="badge">{{ pending_users }}</span>
+                {% endif %}
+            </button></a>
+            {% endif %}
+            <a href="/logout"><button class="logout-btn">Logout</button></a>
+        </div>
+    </div>
+</body>
+</html>

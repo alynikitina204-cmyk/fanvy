@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ room.room_name }} - Watch Together</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            background: #1a1a1a;
+            color: white;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .watch-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            height: 100vh;
+            gap: 0;
+        }
+        
+        .video-section {
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .video-header {
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .room-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .leave-btn {
+            padding: 8px 16px;
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .leave-btn:hover {
+            background: rgba(239,68,68,0.3);
+        }
+        
+        .video-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+        
+        #player {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .sidebar-panel {
+            background: #2d2d2d;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .participants-section {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .participants-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #888;
+        }
+        
+        .participant {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .participant img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .participant-name {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .host-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        
+        .chat-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #888;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 10px;
+        }
+        
+        .chat-message {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        
+        .chat-message.system {
+            background: rgba(102, 126, 234, 0.15);
+            color: #a5b4fc;
+            font-style: italic;
+            text-align: center;
+        }
+        
+        .chat-username {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .chat-text {
+            color: #e5e5e5;
+            font-size: 14px;
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .chat-send-btn {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(34, 197, 94, 0.9);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        
+        @keyframes pulse-online {
+            0% {
+                box-shadow: 0 0 8px rgba(49, 162, 76, 0.8), 0 0 0 0 rgba(49, 162, 76, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 8px rgba(49, 162, 76, 0.8), 0 0 0 10px rgba(49, 162, 76, 0);
+            }
+            100% {
+                box-shadow: 0 0 8px rgba(49, 162, 76, 0.8), 0 0 0 0 rgba(49, 162, 76, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="watch-container">
+    
+    <!-- Video Section -->
+    <div class="video-section">
+        <div class="video-header">
+            <h1 class="room-title">{{ room.room_name }}</h1>
+            <div style="display: flex; gap: 10px;">
+                <form method="POST" action="/watch/leave/{{ room.id }}" style="margin: 0;">
+                    <button type="submit" class="leave-btn">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Leave Room
+                    </button>
+                </form>
+                {% if session.user_id == 1 %}
+                <form method="POST" action="/watch/delete/{{ room.id }}" style="margin: 0;">
+                    <button type="submit" onclick="return confirm('Delete this watch room? All participants will be removed.')" class="leave-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fa-solid fa-trash"></i> Delete Room
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="video-wrapper">
+            <div id="player"></div>
+        </div>
+    </div>
+    
+    <!-- Sidebar Panel -->
+    <div class="sidebar-panel">
+        
+        <!-- Participants -->
+        <div class="participants-section">
+            <h3>👥 Participants ({{ participants|length }})</h3>
+            {% for p in participants %}
+            <div class="participant">
+                <img src="{{ url_for('static', filename=p.avatar or 'avatars/default.png') }}">
+                <span class="participant-name">{{ p.username }} {{ p.id | online_status }}</span>
+                {% if p.id == room.host_id %}
+                <span class="host-badge">Host</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Chat -->
+        <div class="chat-section">
+            <h3>💬 Chat</h3>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-wrapper">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." 
+                       onkeypress="if(event.key==='Enter') sendChat()">
+                <button class="chat-send-btn" onclick="sendChat()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- Sync Indicator -->
+<div id="syncIndicator" class="sync-indicator">
+    <i class="fa-solid fa-circle-notch fa-spin"></i>
+    <span id="syncText">Syncing...</span>
+</div>
+
+<script>
+// YouTube IFrame API
+var tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+var firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+var player;
+var socket = io();
+var roomId = {{ room.id }};
+var userId = {{ user.id }};
+var username = "{{ user.username }}";
+var updatingFromServer = false;
+
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: '{{ room.video_id }}',
+        playerVars: {
+            'autoplay': 0,
+            'controls': 1,
+            'modestbranding': 1,
+            'rel': 0
+        },
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
+}
+
+function onPlayerReady(event) {
+    // Join watch room
+    socket.emit('join_watch_room', {
+        room_id: roomId,
+        user_id: userId,
+        username: username
+    });
+    
+    {% if room.current_time > 0 %}
+    player.seekTo({{ room.current_time }}, true);
+    {% endif %}
+    
+    {% if room.is_playing %}
+    setTimeout(() => player.playVideo(), 500);
+    {% endif %}
+}
+
+function onPlayerStateChange(event) {
+    if (updatingFromServer) return;
+    
+    var currentTime = player.getCurrentTime();
+    
+    if (event.data == YT.PlayerState.PLAYING) {
+        socket.emit('video_play', {
+            room_id: roomId,
+            current_time: currentTime
+        });
+        showSync('Video playing');
+    }
+    else if (event.data == YT.PlayerState.PAUSED) {
+        socket.emit('video_pause', {
+            room_id: roomId,
+            current_time: currentTime
+        });
+        showSync('Video paused');
+    }
+}
+
+// Socket events
+socket.on('user_joined', function(data) {
+    addSystemMessage(data.message);
+});
+
+socket.on('sync_play', function(data) {
+    updatingFromServer = true;
+    player.seekTo(data.current_time, true);
+    player.playVideo();
+    showSync('Synced play');
+    setTimeout(() => { updatingFromServer = false; }, 1000);
+});
+
+socket.on('sync_pause', function(data) {
+    updatingFromServer = true;
+    player.seekTo(data.current_time, true);
+    player.pauseVideo();
+    showSync('Synced pause');
+    setTimeout(() => { updatingFromServer = false; }, 1000);
+});
+
+socket.on('sync_seek', function(data) {
+    updatingFromServer = true;
+    player.seekTo(data.current_time, true);
+    showSync('Synced position');
+    setTimeout(() => { updatingFromServer = false; }, 1000);
+});
+
+socket.on('watch_chat_receive', function(data) {
+    addChatMessage(data.username, data.message, data.user_id);
+});
+
+// Chat functions
+function sendChat() {
+    var input = document.getElementById('chatInput');
+    var message = input.value.trim();
+    
+    if (!message) return;
+    
+    socket.emit('watch_chat_message', {
+        room_id: roomId,
+        username: username,
+        message: message
+    });
+    
+    input.value = '';
+}
+
+function addChatMessage(user, text, userId = null) {
+    var chatDiv = document.getElementById('chatMessages');
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message';
+    
+    var onlineIndicator = '';
+    if (userId) {
+        // Fetch online status for this user
+        fetch(`/api/user-online/${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.online) {
+                    onlineIndicator = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #31a24c; display: inline-block; box-shadow: 0 0 8px rgba(49, 162, 76, 0.8); animation: pulse-online 2s infinite;"></span>';
+                    var userSpan = msgDiv.querySelector('.chat-username');
+                    if (userSpan) {
+                        userSpan.innerHTML += onlineIndicator;
+                    }
+                }
+            });
+    }
+    
+    msgDiv.innerHTML = `
+        <div class="chat-username">${user}</div>
+        <div class="chat-text">${escapeHtml(text)}</div>
+    `;
+    chatDiv.appendChild(msgDiv);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+function addSystemMessage(text) {
+    var chatDiv = document.getElementById('chatMessages');
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message system';
+    msgDiv.innerHTML = `<div class="chat-text">${escapeHtml(text)}</div>`;
+    chatDiv.appendChild(msgDiv);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showSync(text) {
+    var indicator = document.getElementById('syncIndicator');
+    var syncText = document.getElementById('syncText');
+    syncText.textContent = text;
+    indicator.style.display = 'flex';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 2000);
+}
+</script>
+
+</body>
+</html>

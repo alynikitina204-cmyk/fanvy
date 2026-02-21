@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ user.username }}'s Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .profile-container {
+            max-width: 700px;
+            margin: auto;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+        }
+        .profile-header img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .profile-info h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #ff69b4;
+        }
+        .profile-info p {
+            margin: 5px 0 0 0;
+            color: gray;
+        }
+        .verified { color: #1da1f2; font-size: 18px; margin-left: 5px; }
+
+        .friend-action {
+            margin-top: 10px;
+        }
+        .friend-action button, .friend-action a button {
+            padding: 8px 15px;
+            border-radius: 12px;
+            border: none;
+            background: #ff69b4;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .friend-action button:hover { background: #e0559a; }
+        .friend-action span { font-weight: bold; color: green; }
+
+        .posts { display: flex; flex-direction: column; gap: 15px; }
+        .post-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        .post-card img {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        .post-card .username { font-weight: bold; }
+        .post-card .timestamp { font-size: 12px; color: gray; }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+<div class="profile-container">
+    <div class="profile-header">
+        <img src="{{ url_for('static', filename=user.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+        <div class="profile-info">
+            <h2>
+                {{ user.username }} {{ user.id | online_status }}
+                {% if user.id == 1 %}
+                    <span class="admin-badge">ADMIN</span>
+                {% elif user.badge and user.badge != 'none' %}
+                    <span class="vip-badge {{ user.badge }}">VIP</span>
+                {% endif %}
+                {% if user.verified %}<span class="verified-badge">&#10003;</span>{% endif %}
+            </h2>
+            <p style="color:#888;font-size:14px;margin:-4px 0 8px 0;">@{{ user.handle or user.username|lower }}</p>
+            <p>{{ user.bio or "No bio yet" }}</p>
+
+            {% if user.id != session['user_id'] %}
+            <div class="friend-action">
+                {% set is_friend = false %}
+                {% for f in friends %}
+                    {% if f['id'] == user.id %}
+                        {% set is_friend = true %}
+                    {% endif %}
+                {% endfor %}
+
+                {% set has_pending = false %}
+                {% for p in pending_requests %}
+                    {% if p['user_id'] == user.id %}
+                        {% set has_pending = true %}
+                        {% set pending_friendship_id = p['id'] %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if is_friend %}
+                    <span>Friends ✅</span>
+                    <a href="{{ url_for('remove_friend', user_id=user.id) }}"><button>Remove Friend</button></a>
+                {% elif has_pending %}
+                    <form action="{{ url_for('accept_friend_request', friendship_id=pending_friendship_id) }}" method="get">
+                        <button type="submit">Accept Friend</button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('send_friend_request', user_id=user.id) }}"><button>Add Friend</button></a>
+                    <a href="/messages/{{ user.id }}" class="story-btn">Message</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3 style="color:#ff69b4;">Posts</h3>
+    <div class="posts">
+        {% if posts %}
+            {% for post in posts %}
+            <div class="post-card">
+                <div class="username">
+                    {{ post.username }} {{ post.user_id | online_status }}
+                    {% if post.user_subscription == 'premium' %}
+                        <span class="admin-badge">ADMIN</span>
+                    {% endif %}
+                </div>
+                <div class="timestamp">{{ post.created_at }}</div>
+                <div class="post-content">{{ post.content }}</div>
+                {% if post.image %}
+                    <img src="{{ url_for('static', filename=post.image) }}">
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No posts yet.</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

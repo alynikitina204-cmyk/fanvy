@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=3) }}">
+</head>
+<body class="form-page">
+{% include '_theme_toggle.html' %}
+
+    <div class="form-container">
+        <h2>Login</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="padding:12px;border-radius:12px;margin-bottom:16px;{% if category == 'success' %}background:#d1fae5;color:#065f46;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+        
+        {% if request.args.get('deleted') == '1' %}
+        <div style="background:#10b981;color:white;padding:12px;border-radius:12px;margin-bottom:16px;text-align:center;">
+            ✓ Account deleted successfully
+        </div>
+        {% endif %}
+        
+        <form method="POST">
+            <input name="email" type="email" placeholder="Email" required>
+            <input name="password" type="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <a href="/register">Don't have an account? Register</a>
+    </div>
+
+</body>
+</html>

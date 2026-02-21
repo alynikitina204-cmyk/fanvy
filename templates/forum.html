@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Community Feed</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=3) }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+/* Instagram-like story strip */
+.story-strip {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding: 12px 0;
+    margin-bottom: 18px;
+    scroll-behavior: smooth;
+}
+.story-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    width: 80px;
+}
+.story-item img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid var(--accent);
+    margin-bottom: 6px;
+    background: var(--card);
+}
+.add-story-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 6px;
+    border: 1.5px solid var(--soft-3);
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    transition: box-shadow .2s, border .2s;
+}
+.add-story-circle:active,
+.add-story-circle:focus,
+.add-story-circle:hover {
+    box-shadow: 0 0 0 4px rgba(100,180,255,.18), 0 8px 24px rgba(0,0,0,.12);
+    border: 1.5px solid var(--accent-2);
+    color: var(--text);
+}
+.add-story-circle i {
+    color: var(--muted);
+    transition: color .2s;
+}
+.add-story-circle:active i,
+.add-story-circle:focus i,
+.add-story-circle:hover i {
+    color: var(--text);
+}
+.sidebar a {
+    transition: box-shadow .2s, background .2s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.sidebar a:active,
+.sidebar a:focus,
+.sidebar a:hover {
+    background: var(--soft-1);
+    box-shadow: 0 0 0 4px rgba(31,35,40,.08);
+}
+
+.notification-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+/* story modal header */
+.story-modal {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    background: rgba(0,0,0,0.6);
+    z-index:1000;
+}
+body.story-open { overflow: hidden; }
+body.story-open #themeToggle { display: none; }
+
+.story-shell {
+    width: min(520px, 92vw);
+    background: rgba(12, 12, 12, 0.9);
+    border-radius: 18px;
+    padding: 14px 14px 10px;
+    color: #fff;
+    box-shadow: 0 24px 80px rgba(0,0,0,.35);
+    position: relative;
+}
+.story-top {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:10px;
+}
+.story-userline {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+}
+.story-user { font-size: 14px; letter-spacing: .2px; }
+.story-pfp {
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    object-fit:cover;
+    border:1px solid rgba(255,255,255,.2);
+}
+.story-actions {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:40px;
+}
+.story-icon {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.12);
+    color: #fff;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+}
+.story-icon:hover { background: rgba(255,255,255,.22); }
+.story-icon.danger { background: rgba(220,38,38,.2); border-color: rgba(220,38,38,.45); }
+
+.story-media {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+}
+.story-full {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    object-fit: contain;
+    display:block;
+}
+.story-reply {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+}
+.story-reply input {
+    flex:1;
+    background: rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.18);
+    color:#fff;
+    padding:10px 12px;
+    border-radius:999px;
+    outline:none;
+}
+.story-reply input::placeholder { color: rgba(255,255,255,.6); }
+.story-reply button {
+    background:#fff;
+    border:1px solid rgba(255,255,255,.5);
+    color:#111;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    cursor:pointer;
+}
+.story-reply button:hover { background: #f3f4f6; }
+
+.story-strip.active { cursor: grabbing; }
+
+.story-nav {
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    background: rgba(0,0,0,0.35);
+    border:none;
+    color:#fff;
+    font-size:20px;
+    padding:6px 10px;
+    cursor:pointer;
+    border-radius:999px;
+    z-index:1001;
+    opacity:0.6;
+}
+.story-nav.prev { left:8px; }
+.story-nav.next { right:8px; }
+.story-nav:hover { background: rgba(0,0,0,0.55); opacity:0.9; }
+
+/* Cleaner Buttons */
+.story-btn, .create-post button{
+    background:#fff;
+    color:var(--text);
+    border:1px solid var(--border);
+    padding:8px 16px;
+    border-radius:14px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow: var(--shadow-soft);
+    transition: background .2s, box-shadow .2s, transform .15s;
+}
+
+.story-btn:hover, .create-post button:hover{
+    background: var(--soft-1);
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
+}
+
+.create-post input[type="file"]{
+    border:none;
+    background:var(--soft-1);
+    padding:6px 12px;
+    border-radius:12px;
+}
+
+/* Comment input */
+.comment-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--soft-1);
+    border-radius: 12px;
+    align-items: center;
+}
+
+.comment-form input {
+    flex: 1;
+    border-radius: 20px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-soft);
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.comment-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.comment-form input::placeholder {
+    color: var(--muted);
+}
+
+.send-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.send-btn:hover {
+    background: var(--accent-2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: scale(1.05);
+}
+
+.send-btn svg {
+    fill: white;
+    width: 18px;
+    height: 18px;
+}
+
+/* Delete Button */
+.delete-post{
+    background:#fff;
+    border:1px solid var(--border);
+    padding:6px 12px;
+    color:#c0392b;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.delete-post:hover{ background:#fdecea; border-color:#e8b4b0; }
+
+.post-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.like-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.like-btn:hover {
+    color: #ff4d8d;
+}
+
+.like-btn i {
+    font-size: 18px;
+}
+
+</style>
+
+</head>
+
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="container">
+
+<div class="sidebar">
+    <h3>Hi {{ session.get('username', 'User') }}</h3>
+    <a href="/forum">Community</a>
+    <a href="/friends">
+        <span>Friends</span>
+        {% if friend_requests_count > 0 %}
+        <span class="notification-badge">{{ friend_requests_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/followers">
+        <span>Followers</span>
+        {% if new_followers_count > 0 %}
+        <span class="notification-badge">{{ new_followers_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/messages">
+        <span>Messages</span>
+        {% if unread_messages_count > 0 %}
+        <span class="notification-badge">{{ unread_messages_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/photos">Photos</a>
+    <a href="/watch">Watch Together</a>
+    {% if session.user_id == 1 %}
+    <a href="/shop">Shop</a>
+    <a href="/applications">Applications</a>
+    {% endif %}
+    <a href="/suggest-idea" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600;">
+        <i class="fa-solid fa-lightbulb"></i> Suggest an Idea
+    </a>
+    <a href="/subscription">Subscription</a>
+    <a href="/profile">Profile</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/logout">Logout</a>
+</div>
+
+<div class="feed">
+
+<div class="story-box">
+    <div class="story-strip" id="storyStrip">
+        <!-- Add Story Circle -->
+        <div class="story-item">
+            <form method="POST" action="/add_story" enctype="multipart/form-data" style="display:inline;">
+                <label class="add-story-circle" for="addStoryInput">
+                    <i class="fa-solid fa-plus"></i>
+                </label>
+                <input id="addStoryInput" type="file" name="image" accept="image/*" style="display:none;" onchange="this.form.submit()">
+            </form>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px;">Add Story</div>
+        </div>
+        {% for uid, user_stories in stories_by_user.items() %}
+        {% set first = user_stories[0] %}
+        <div class="story-item"
+             data-user="{{ uid }}"
+             data-owner="{{ first.user_id }}"
+             data-avatar="{{ url_for('static', filename=first.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}"
+             data-username="{{ first.username }}"
+             data-stories='{{ user_stories | tojson }}'
+             onclick="viewStory(this)">
+            <img src="{{ url_for('static', filename=first.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+            <div>
+                {{ first.username }} {{ first.user_id | online_status }}
+                {% if first.user_subscription == 'premium' %}
+                    <span class="admin-badge">ADMIN</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="create-post">
+    <form id="forumPostForm" method="POST" action="/forum" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+        <textarea name="content" placeholder="What's on your mind?" style="width:100%;border-radius:16px;border:1.5px solid #ccc;padding:14px;font-size:16px;background:#f8f8fa;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.04);"></textarea>
+        <input type="text" name="tags" placeholder="Tags (e.g. music, gaming, travel)" style="width:100%;border-radius:12px;border:1.5px solid #ccc;padding:10px 14px;font-size:14px;background:#f8f8fa;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div>
+                <label for="forumImageInput" class="chat-upload-label" title="Add Image" style="cursor:pointer;">
+                    <i class="fa-solid fa-image chat-upload-icon"></i>
+                </label>
+                <input type="file" name="image" accept="image/*" style="display:none;" id="forumImageInput">
+                <span id="forumImageName" style="font-size:12px;color:#888;margin-left:4px;"></span>
+            </div>
+            {% if session.user_id == 1 or (user and user['subscription'] == 'premium') %}
+            <div>
+                <label for="forumMusicInput" class="chat-upload-label" title="Add Music" style="cursor:pointer;">
+                    <i class="fa-solid fa-music chat-upload-icon"></i>
+                </label>
+                <input type="file" name="music" accept="audio/*" style="display:none;" id="forumMusicInput">
+                <span id="forumMusicName" style="font-size:12px;color:#888;margin-left:4px;"></span>
+            </div>
+            {% endif %}
+        </div>
+        <button class="edit-btn" type="submit">Post</button>
+    </form>
+</div>
+
+<script>
+const forumImageInput = document.getElementById('forumImageInput');
+const forumMusicInput = document.getElementById('forumMusicInput');
+
+if(forumImageInput) {
+    forumImageInput.addEventListener('change', (e) => {
+        const name = e.target.files.length > 0 ? '✓ ' + e.target.files[0].name : '';
+        document.getElementById('forumImageName').textContent = name;
+        console.log('Forum image selected:', e.target.files[0]?.name);
+    });
+}
+
+if(forumMusicInput) {
+    forumMusicInput.addEventListener('change', (e) => {
+        const name = e.target.files.length > 0 ? '✓ ' + e.target.files[0].name : '';
+        document.getElementById('forumMusicName').textContent = name;
+        console.log('Forum music selected:', e.target.files[0]?.name);
+    });
+}
+
+// Comments Modal Functions
+function openCommentsModal(postId) {
+    const modal = document.getElementById('commentsModal' + postId);
+    if(modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeCommentsModal(postId) {
+    const modal = document.getElementById('commentsModal' + postId);
+    if(modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    if(e.target.id && e.target.id.startsWith('commentsModal')) {
+        if(e.target === e.currentTarget) {
+            const postId = e.target.id.replace('commentsModal', '');
+            closeCommentsModal(postId);
+        }
+    }
+});
+</script>
+
+{% for post in posts %}
+<div class="post-card" {% if post.user_subscription == 'premium' %}style="border: 2px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(135deg, #667eea, #764ba2) border-box;"{% endif %}>
+
+<div class="post-header">
+    <img src="{{ url_for('static', filename=post.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+    <a href="{{ url_for('view_user_profile', user_id=post.user_id) }}" class="post-user">
+        <strong>
+            {{ post.username }} {{ post.user_id | online_status }}
+            {% if post.user_id == 1 %}
+                <span class="admin-badge">ADMIN</span>
+            {% elif post.user_badge and post.user_badge != 'none' %}
+                <span class="vip-badge {{ post.user_badge }}">VIP</span>
+            {% endif %}
+            {% if post.user_subscription == 'premium' %}
+                <span style="background: linear-gradient(135deg, #ffd700, #ffed4e); color: #333; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; margin-left: 6px;">⭐ PREMIUM</span>
+            {% endif %}
+        </strong>
+    </a>
+    <span style="margin-left:auto;font-size:12px;color:#888">{{ post.created_at }}</span>
+    
+    <!-- Like and Delete on Right -->
+    <div style="display: flex; align-items: center; gap: 8px; margin-left: 12px;">
+        <form method="GET" action="/like/{{ post.id }}" style="display: inline;">
+            <button class="like-btn" style="gap: 4px;">
+                <i class="fa-solid fa-heart"></i> <span style="font-size: 12px;">{{ post.like_count }}</span>
+            </button>
+        </form>
+        
+        {% if post.user_id == session.get('user_id') %}
+        <form method="POST" action="/delete_post/{{ post.id }}" style="display: inline;">
+            <button type="submit" style="background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 6px 8px; opacity: 0.6; transition: opacity 0.2s;" title="Delete post" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="post-content">
+    {{ post.content | linkify }}
+    {% if post.image %}
+    <img src="{{ url_for('static', filename=post.image) }}" class="post-image">
+    {% endif %}
+    {% if post.music %}
+    <div class="music-post" style="display:flex;align-items:center;gap:8px;padding:0;margin-top:8px;background:transparent;">
+        <i class="fa-solid fa-music" style="font-size:18px;color:#bbb;"></i>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+            {% if post.music_title %}
+            <span style="font-size:13px;color:var(--text);font-weight:500;">{{ post.music_title }}</span>
+            {% endif %}
+            <audio controls src="{{ url_for('static', filename=post.music) }}" style="flex:1;background:transparent;height:28px;"></audio>
+        </div>
+    </div>
+    {% endif %}
+    {% if post.tags %}
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;">
+        {% for tag in post.tags.split(',') %}
+        {% if tag.strip() %}
+        <span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">#{{ tag.strip() }}</span>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="post-footer">
+
+<!-- View Comments Button -->
+{% if post.comments %}
+<button class="view-comments-btn" onclick="openCommentsModal({{ post.id }})" style="background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 12px 0; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+    <i class="fa-solid fa-comments"></i> {{ post.comments|length }} {{ 'comment' if post.comments|length == 1 else 'comments' }}
+</button>
+{% endif %}
+
+<!-- Comment Input Form -->
+<form class="comment-form" method="POST" action="/comment/{{ post.id }}" style="margin: 20px -16px -16px -16px; padding: 16px 16px; background: transparent; border: none; border-radius: 0; display: flex; gap: 12px; align-items: center;">
+    <div style="flex: 1; display: flex; gap: 8px; align-items: center;">
+        <input name="content" placeholder="Write a comment..." required style="flex: 1; border-radius: 20px; padding: 10px 16px; border: 1px solid var(--border-soft); background: var(--card); color: var(--text); font-size: 14px;">
+        <button type="submit" class="send-btn" title="Send comment" style="margin-left: 0;">
+            <svg viewBox="0 0 24 24">
+                <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z"/>
+            </svg>
+        </button>
+    </div>
+</form>
+
+</div>
+
+<!-- Comments Modal -->
+{% if post.comments %}
+<div id="commentsModal{{ post.id }}" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; align-items: center; justify-content: center;">
+    <div style="background: var(--card); border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 18px; color: var(--text);">Comments ({{ post.comments|length }})</h3>
+            <button onclick="closeCommentsModal({{ post.id }})" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); padding: 0;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <div style="flex: 1; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 16px;">
+            {% for comment in post.comments %}
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <img src="{{ url_for('static', filename=comment.avatar or 'avatars/default.png') }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <strong style="color: var(--accent); font-size: 13px;">{{ comment.username }}</strong>
+                        {% if comment.user_id == session.get('user_id') %}
+                        <form method="POST" action="/delete_comment/{{ comment.id }}" style="display: inline; margin: 0; padding: 0;">
+                            <button type="submit" style="background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0; opacity: 0.5; transition: opacity 0.2s; margin: 0;" title="Delete" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <p style="margin: 0; padding: 0; font-size: 14px; color: var(--text); line-height: 1.4;">{{ comment.content | linkify }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+</div>
+{% endfor %}
+
+</div>
+</div>
+
+<div id="storyModal" class="story-modal">
+    <div class="story-shell">
+        <div class="story-top">
+            <div class="story-userline">
+                <img id="storyProfile" src="" class="story-pfp">
+                <span id="storyUsername" class="story-user"></span>
+            </div>
+            <div class="story-actions">
+                <button id="storyBack" class="story-icon" type="button" title="Back">
+                    <i class="fa fa-arrow-left"></i>
+                </button>
+                <button id="storyDelete" class="story-icon danger" type="button" title="Delete">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="story-media">
+            <button class="story-nav prev" onclick="prevStory()">&#10094;</button>
+            <img id="storyImage" class="story-full">
+            <button class="story-nav next" onclick="nextStory()">&#10095;</button>
+        </div>
+
+        <form id="storyReplyForm" class="story-reply" method="POST">
+            <input id="storyReplyInput" name="content" placeholder="Reply to story..." maxlength="300" autocomplete="off">
+            <button type="submit" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
+    </div>
+</div>
+
+<script>
+const currentUser = "{{ session.get('user_id') or '' }}";
+const staticBase = "{{ url_for('static', filename='') }}"; // ends with '/'
+let currentOwner = null;
+
+let currentStories = [];
+let storyIndex = 0;
+let currentStoryId = null;
+
+function viewStory(element){
+    const ownerId = element.dataset.owner;
+    const avatar = element.dataset.avatar;
+    const username = element.dataset.username;
+    currentStories = JSON.parse(element.dataset.stories || '[]');
+    storyIndex = 0;
+
+    showStory(ownerId, avatar, username);
+}
+
+function showStory(ownerId, avatar, username){
+    const modal = document.getElementById("storyModal");
+    const img = document.getElementById("storyImage");
+    const profilePic = document.getElementById("storyProfile");
+    const userLabel = document.getElementById("storyUsername");
+    const backBtn = document.getElementById("storyBack");
+    const deleteBtn = document.getElementById("storyDelete");
+    const replyForm = document.getElementById("storyReplyForm");
+
+    if(modal && img) {
+        modal.style.display = "flex";
+        document.body.classList.add("story-open");
+        let imgPath = currentStories[storyIndex].image || '';
+        // if path already includes /static/, avoid prefixing again
+        if (imgPath.startsWith('/static/')) {
+            imgPath = imgPath.replace(/^\/?static\//, '/static/');
+        } else if (!imgPath.startsWith('/') && !imgPath.startsWith('http')) {
+            imgPath = staticBase + imgPath;
+        }
+        img.src = imgPath;
+        if(profilePic) {
+            let avatarPath = avatar || '';
+            if (!avatarPath || avatarPath === 'None') {
+                avatarPath = staticBase + 'avatars/default.png';
+            } else if (avatarPath.startsWith('/static/')) {
+                avatarPath = avatarPath.replace(/^\/?static\//, '/static/');
+            } else if (!avatarPath.startsWith('/') && !avatarPath.startsWith('http')) {
+                avatarPath = staticBase + avatarPath;
+            }
+            profilePic.src = avatarPath;
+        }
+        if(userLabel) userLabel.textContent = username;
+    }
+
+    currentOwner = ownerId;
+    currentStoryId = currentStories[storyIndex].id;
+
+    if (backBtn) {
+        backBtn.onclick = () => closeStory();
+    }
+
+    if (deleteBtn) {
+        if (ownerId == currentUser) {
+            deleteBtn.style.display = "flex";
+            deleteBtn.onclick = () => {
+                if(confirm('Delete this story?')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "/story/" + currentStoryId + "/delete";
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            };
+        } else {
+            deleteBtn.style.display = "none";
+        }
+    }
+
+    if (replyForm) {
+        replyForm.action = "/story/" + currentStoryId + "/reply";
+        replyForm.style.display = (ownerId == currentUser) ? "none" : "flex";
+    }
+}
+
+// navigate next/previous when modal open
+function nextStory(){
+    if(storyIndex < currentStories.length - 1){
+        storyIndex++;
+        showStory(currentStories[storyIndex].user_id, currentStories[storyIndex].avatar, currentStories[storyIndex].username);
+    }
+}
+function prevStory(){
+    if(storyIndex > 0){
+        storyIndex--;
+        showStory(currentStories[storyIndex].user_id, currentStories[storyIndex].avatar, currentStories[storyIndex].username);
+    }
+}
+
+// scroll strip to start on load so newest appears
+window.addEventListener('load', () => {
+    const strip = document.getElementById('storyStrip');
+    if(strip) strip.scrollLeft = 0;
+
+    // enable click-and-drag horizontal scrolling
+    if(strip) {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        strip.addEventListener('mousedown', (e) => {
+            isDown = true;
+            strip.classList.add('active');
+            startX = e.pageX - strip.offsetLeft;
+            scrollLeft = strip.scrollLeft;
+        });
+        strip.addEventListener('mouseleave', () => {
+            isDown = false;
+            strip.classList.remove('active');
+        });
+        strip.addEventListener('mouseup', () => {
+            isDown = false;
+            strip.classList.remove('active');
+        });
+        strip.addEventListener('mousemove', (e) => {
+            if(!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - strip.offsetLeft;
+            const walk = (x - startX) * 3; // scroll-fast
+            strip.scrollLeft = scrollLeft - walk;
+        });
+    }
+});
+
+function closeStory(){
+    const modal = document.getElementById("storyModal");
+    if(modal) modal.style.display = "none";
+    document.body.classList.remove("story-open");
+}
+
+const replyForm = document.getElementById("storyReplyForm");
+if (replyForm) {
+    replyForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!currentStoryId) return;
+        const input = document.getElementById("storyReplyInput");
+        const text = (input && input.value ? input.value.trim() : "");
+        if (!text) return;
+
+        const formData = new FormData(replyForm);
+        fetch(replyForm.action, {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        }).then(() => {
+            if (input) {
+                input.value = "";
+                input.placeholder = "Sent to messages";
+                setTimeout(() => { input.placeholder = "Reply to story..."; }, 1200);
+            }
+        }).catch(() => {
+            if (input) input.placeholder = "Send failed";
+        });
+    });
+}
+</script>
+
+</body>
+</html>

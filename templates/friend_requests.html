@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Friend Requests</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        body {
+            background: #f5f5f7;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .06);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .request {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .actions a {
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .accept {
+            background: #22c55e;
+            color: white;
+        }
+
+        .reject {
+            background: #ef4444;
+            color: white;
+            margin-left: 6px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+{% include '_theme_toggle.html' %}
+
+    <div class="container">
+
+        <h2>Friend Requests</h2>
+
+        {% for r in requests %}
+        <div class="request">
+
+            <div class="user">
+                <img src="{{ url_for('static', filename=r.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+                <strong>
+                    {{ r.username }} {{ r.id | online_status }}
+                    {% if r.subscription == 'premium' %}
+                        <span class="admin-badge">ADMIN</span>
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="actions">
+                <a href="/friend/accept/{{ r.request_id }}" class="accept">Accept</a>
+                <a href="/friend/reject/{{ r.request_id }}" class="reject">Reject</a>
+            </div>
+
+        </div>
+        {% else %}
+        <p style="color:#777;">No pending friend requests</p>
+        {% endfor %}
+
+        <a href="/friends" class="back">← Back to Friends</a>
+
+    </div>
+
+</body>
+
+</html>

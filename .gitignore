@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+users.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads and Media
+static/uploads/*
+!static/uploads/.gitkeep
+static/avatars/*
+!static/avatars/default.png
+static/music/*
+static/stories/*
+static/photos/*
+
+# Environment variables
+.env
+email_config.py
+
+# Logs
+*.log

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Watch Together</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        .watch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .create-room-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .create-room-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .room-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-soft);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .room-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+        }
+        
+        .room-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: #000;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .room-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .play-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #667eea;
+        }
+        
+        .room-info h3 {
+            margin: 0 0 8px 0;
+            color: var(--text);
+        }
+        
+        .room-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        
+        .room-users {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 18px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-content h2 {
+            margin: 0 0 20px 0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-soft);
+            background: var(--soft-1);
+            color: var(--text);
+            font-size: 15px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--soft-1);
+            color: var(--text);
+            border: 1px solid var(--border-soft);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            opacity: 0.3;
+            margin-bottom: 20px;
+        }
+        
+        .room-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .room-actions button {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-soft);
+            background: var(--soft-1);
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .room-actions button:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .friend-item {
+            padding: 10px;
+            background: var(--soft-1);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .friend-item button {
+            padding: 4px 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .privacy-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .privacy-badge.public {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .privacy-badge.private {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Notification badge */
+        .notification-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+        .sidebar a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="container">
+    
+    <div class="sidebar">
+        <h3>Hi {{ session.username }}</h3>
+        <a href="/forum">Community</a>
+        <a href="/friends">
+            <span>Friends</span>
+            {% if friend_requests_count > 0 %}
+            <span class="notification-badge">{{ friend_requests_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/followers">
+            <span>Followers</span>
+            {% if new_followers_count > 0 %}
+            <span class="notification-badge">{{ new_followers_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/messages">
+            <span>Messages</span>
+            {% if unread_messages_count > 0 %}
+            <span class="notification-badge">{{ unread_messages_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/profile">Profile</a>
+        <a href="/photos">Photos</a>
+        <a href="/watch">Watch Together</a>
+        {% if session.user_id == 1 %}
+        <a href="/shop">Shop</a>
+        <a href="/purchases">My Purchases</a>
+        {% endif %}
+        <a href="/subscription">Subscription</a>
+        <a href="/dashboard">Dashboard</a>
+        
+        <!-- Quick Add Friends Section -->
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border-soft);">
+        <h4 style="margin: 15px 0 10px 0; font-size: 13px; color: var(--muted); text-transform: uppercase;">Invite Friends</h4>
+        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+            <input type="text" id="friendSearch" placeholder="Search friends..." style="flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--border-soft); background: var(--soft-1); color: var(--text); font-size: 13px;">
+            <button onclick="searchFriends()" style="padding: 8px 12px; background: var(--accent); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                <i class="fa-solid fa-search"></i>
+            </button>
+        </div>
+        <div id="friendResults" style="max-height: 200px; overflow-y: auto;"></div>
+    </div>
+    
+    <div class="feed">
+        
+        <div class="watch-header">
+            <div>
+                <h2>🍿 Watch Together</h2>
+                <p style="color: var(--muted); margin: 5px 0 0 0;">Watch YouTube videos in sync with friends</p>
+            </div>
+            <button class="create-room-btn" onclick="openCreateModal()">
+                <i class="fa-solid fa-plus"></i> Create Room
+            </button>
+        </div>
+        
+        {% if rooms %}
+        <div class="room-grid">
+            {% for room in rooms %}
+            <div class="room-card">
+                <div class="room-thumbnail" onclick="window.location.href='/watch/room/{{ room.id }}'">
+                    <img src="https://img.youtube.com/vi/{{ room.video_id }}/maxresdefault.jpg" 
+                         onerror="this.src='https://img.youtube.com/vi/{{ room.video_id }}/hqdefault.jpg'">
+                    <div class="play-overlay">
+                        <div class="play-icon">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="room-info">
+                    <h3>{{ room.room_name }}</h3>
+                    <div>
+                        {% if room.is_private == 1 %}
+                            <span class="privacy-badge private">🔒 Private</span>
+                        {% else %}
+                            <span class="privacy-badge public">🌍 Public</span>
+                        {% endif %}
+                    </div>
+                    <div class="room-meta">
+                        <div class="room-users">
+                            <i class="fa-solid fa-users"></i>
+                            <span>{{ room.participant_count }}</span>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-user"></i>
+                            <span>{{ room.host_name }}</span>
+                        </div>
+                    </div>
+                    <div class="room-actions">
+                        <button onclick="openShareModal('/watch/room/{{ room.id }}', '{{ room.room_name }}')">
+                            <i class="fa-solid fa-share"></i> Share
+                        </button>
+                        <button onclick="window.location.href='/watch/room/{{ room.id }}'">
+                            <i class="fa-solid fa-arrow-right"></i> Join
+                        </button>
+                        {% if session.user_id == 1 %}
+                        <form method="POST" action="/watch/delete/{{ room.id }}" style="display: inline; margin: 0;">
+                            <button type="submit" onclick="return confirm('Delete this watch room?')" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div><i class="fa-solid fa-film"></i></div>
+            <h3>No Active Watch Rooms</h3>
+            <p>Create a room to watch YouTube videos with your friends!</p>
+        </div>
+        {% endif %}
+        
+    </div>
+    
+</div>
+
+<!-- Create Room Modal -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <h2>🎬 Create Watch Room</h2>
+        <form method="POST" action="/watch/create">
+            <div class="form-group">
+                <label>Room Name</label>
+                <input type="text" name="room_name" placeholder="e.g. Movie Night 🍿" required>
+            </div>
+            <div class="form-group">
+                <label>YouTube URL</label>
+                <input type="text" name="youtube_url" placeholder="https://youtube.com/watch?v=..." required>
+            </div>
+            <div class="form-group">
+                <label>Room Privacy</label>
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="radio" name="is_private" value="0" checked>
+                        <span>🌍 Public - Anyone can join</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="radio" name="is_private" value="1">
+                        <span>🔒 Private - Invite only</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Room</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Share Room Modal -->
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <h2>🔗 Share Watch Room</h2>
+        <p style="color: var(--muted); margin: 15px 0;">Share this link with friends to invite them to join</p>
+        <div class="form-group">
+            <label>Room Join Link</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="roomLink" readonly style="flex: 1;" onclick="this.select()">
+                <button type="button" class="btn btn-primary" onclick="copyToClipboard()" style="flex: 0; padding: 12px 20px;">
+                    <i class="fa-solid fa-copy"></i> Copy
+                </button>
+            </div>
+        </div>
+        <p style="font-size: 13px; color: var(--muted); margin-top: 15px;">Or invite friends directly:</p>
+        <div id="shareQuickFriends" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"></div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeShareModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('active');
+}
+
+function closeCreateModal() {
+    document.getElementById('createModal').classList.remove('active');
+}
+
+function openShareModal(roomLink, roomName) {
+    document.getElementById('roomLink').value = window.location.origin + roomLink;
+    loadShareFriends(roomLink);
+    document.getElementById('shareModal').classList.add('active');
+}
+
+function closeShareModal() {
+    document.getElementById('shareModal').classList.remove('active');
+}
+
+function copyToClipboard() {
+    const link = document.getElementById('roomLink');
+    link.select();
+    document.execCommand('copy');
+    
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+    }, 2000);
+}
+
+function loadShareFriends(roomLink) {
+    fetch('/api/friends')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('shareQuickFriends');
+            if (data.friends && data.friends.length > 0) {
+                container.innerHTML = data.friends.map(f => `
+                    <div class="friend-item">
+                        <span>${f.username}</span>
+                        <button onclick="sendRoomInvite(${f.id}, '${roomLink}')">Invite</button>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="color: var(--muted); font-size: 13px;">No friends to invite</p>';
+            }
+        });
+}
+
+function sendRoomInvite(friendId, roomLink) {
+    const btn = event.target;
+    fetch(`/api/send-room-invite/${friendId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({room_link: roomLink})
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.textContent = '✓ Invited';
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.textContent = 'Invite';
+            btn.disabled = false;
+        }, 2000);
+    });
+}
+
+function searchFriends() {
+    const query = document.getElementById('friendSearch').value.trim();
+    if (!query) return;
+    
+    fetch(`/api/search-users?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('friendResults');
+            if (data.users && data.users.length > 0) {
+                container.innerHTML = data.users.map(u => `
+                    <div class="friend-item">
+                        <span>${u.username}</span>
+                        <button onclick="sendFriendRequest(${u.id}, this)">
+                            ${u.friendship_status === 'pending' ? '⏳ Pending' : u.friendship_status === 'accepted' ? '✓ Friends' : '+ Add'}
+                        </button>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="color: var(--muted); font-size: 13px; padding: 10px;">No users found</p>';
+            }
+        });
+}
+
+function sendFriendRequest(userId, btn) {
+    if (btn.textContent.includes('Pending') || btn.textContent.includes('Friends')) return;
+    
+    fetch(`/send_friend_request/${userId}`, {method: 'POST'})
+        .then(r => {
+            if (r.ok) {
+                btn.textContent = '⏳ Pending';
+                btn.disabled = true;
+            }
+        });
+}
+
+// Close modals on outside click
+document.getElementById('createModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'createModal') closeCreateModal();
+});
+
+document.getElementById('shareModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'shareModal') closeShareModal();
+});
+
+// Search friends on Enter key
+document.getElementById('friendSearch')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') searchFriends();
+});
+</script>
+
+</body>
+</html>

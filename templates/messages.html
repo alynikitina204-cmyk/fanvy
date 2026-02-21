@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Chat</title>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- main stylesheet for theme variables -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+}
+.container {
+    display: flex;
+    max-width: 1200px;
+    margin: 40px auto;
+    height: 85vh;
+    gap: 20px;
+}
+.sidebar {
+    width: 280px;
+    background: var(--card);
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-soft);
+}
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.nav-buttons a {
+    flex: 1;
+    text-align: center;
+    padding: 9px;
+    border-radius: 12px;
+    background: #fff;
+    text-decoration: none;
+    color: var(--accent);
+    font-weight: 600;
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-soft);
+    transition: background .2s, box-shadow .2s, border .2s;
+}
+.nav-buttons a:hover { background: var(--soft-1); box-shadow: var(--shadow-medium); border-color: var(--border); }
+h3 {
+    margin: 10px 0 15px;
+    color: var(--text);
+}
+.chat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+}
+.chat-user-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 14px;
+    transition: .15s;
+}
+.chat-user-row:hover { background: var(--soft-1); }
+.chat-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+.chat-user a {
+    color: var(--text);
+    text-decoration: none;
+}
+.chat-user a:hover { color: var(--accent); }
+.chat-user img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.chat-user strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+.chat-window {
+    flex: 1;
+    background: var(--card);
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-soft);
+}
+.chat-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.chat-header img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.chat-body {
+    flex: 1;
+    padding: 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--soft-1);
+}
+.message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    max-width: 80%;
+}
+.message-row.sent {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-soft);
+}
+.sticker-image {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+}
+.msg-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+.msg-actions button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+}
+.msg-actions button:hover { color: var(--accent); }
+.sent .bubble {
+    background: var(--soft-1);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-bottom-right-radius: 6px;
+}
+.received .bubble {
+    background: var(--card);
+    border-bottom-left-radius: 6px;
+    border: 1px solid var(--border-soft);
+}
+.time {
+    display: block;
+    font-size: 11px;
+    margin-top: 6px;
+    opacity: .6;
+    text-align: right;
+    color: var(--muted);
+}
+.chat-input {
+    padding: 14px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--card);
+}
+.chat-input input {
+    flex: 1;
+    border-radius: 20px;
+    border: 1px solid var(--border-soft);
+    padding: 12px 16px;
+    outline: none;
+    background: var(--soft-1);
+    color: var(--text);
+    font-size: 14px;
+    transition: border .2s;
+}
+.chat-input input:focus { border-color: var(--border); }
+.chat-input button {
+    background: var(--button-bg);
+    border: 1px solid var(--button-border);
+    color: var(--button-text);
+    padding: 12px 22px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s, transform .15s, box-shadow .2s;
+    box-shadow: var(--shadow-soft);
+}
+.chat-input button:hover {
+    background: var(--soft-1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+}
+.empty {
+    margin: auto;
+    font-size: 18px;
+    color: var(--muted);
+}
+.sticker-panel {
+    position: absolute;
+    right: 18px;
+    bottom: 76px;
+    background: var(--card);
+    border: 1px solid var(--soft-2);
+    border-radius: 12px;
+    padding: 8px;
+    display: none;
+    max-width: 300px;
+    max-height: 220px;
+    overflow: auto;
+    box-shadow: var(--shadow-soft);
+    z-index: 10;
+}
+.sticker-btn {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+}
+.sticker-btn img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; }
+.sticker-locked { opacity: .45; cursor: not-allowed; }
+.sticker-lock {
+    position: absolute;
+    inset: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: rgba(0,0,0,.35);
+    border-radius: 8px;
+    font-size: 12px;
+}
+.money-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    margin-top: 4px;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.money-input {
+    width: 80px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--soft-1);
+    color: var(--text);
+    font-size: 13px;
+}
+.money-send-btn {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: #fff !important;
+    padding: 8px 16px !important;
+    border-radius: 12px !important;
+    border: none !important;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+}
+.money-send-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+}
+</style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+<div class="container">
+<div class="sidebar">
+    <div class="nav-buttons">
+        <a href="/forum">Community</a>
+        <a href="/profile">Profile</a>
+    </div>
+    <h3>Messages</h3>
+    <div class="chat-list">
+        {% for friend in friends %}
+        <div class="chat-user-row">
+            <a class="chat-user" href="/messages/{{ friend.id }}">
+                <img src="{{ url_for('static', filename=friend.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+                <strong>
+                    <a href="/profile/{{ friend.id }}">
+                        {{ friend.username }} {{ friend.id | online_status }}
+                    </a>
+                    {% if friend.id == 1 %}
+                        <span class="admin-badge">ADMIN</span>
+                    {% elif friend.badge and friend.badge != 'none' %}
+                        <span class="vip-badge {{ friend.badge }}">VIP</span>
+                    {% endif %}
+                </strong>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<div class="chat-window">
+{% if active_user %}
+<div class="chat-header">
+    <img src="{{ url_for('static', filename=active_user.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+    <strong>
+        <a href="/profile/{{ active_user.id }}" style="text-decoration:none;color:inherit;">
+            {{ active_user.username }} {{ active_user.id | online_status }}
+        </a>
+        {% if active_user.id == 1 %}
+            <span class="admin-badge">ADMIN</span>
+        {% elif active_user.badge and active_user.badge != 'none' %}
+            <span class="vip-badge {{ active_user.badge }}">VIP</span>
+        {% endif %}
+    </strong>
+</div>
+<div class="chat-body" id="chatBody">
+{% for msg in messages %}
+<div class="message-row {% if msg.sender_id == session['user_id'] %}sent{% else %}received{% endif %}" data-id="{{ msg.id }}">
+    {% if msg.sender_id != session['user_id'] %}
+    <img src="{{ url_for('static', filename=active_user.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}" class="avatar">
+    {% endif %}
+    <div class="bubble">
+        {% if msg.money_amount and msg.money_amount > 0 %}
+            <div class="money-badge">
+                <i class="fa-solid fa-coins"></i>
+                ${{ "%.2f"|format(msg.money_amount) }}
+            </div>
+            {% if msg.content %}
+            <div style="margin-top:6px;">{{ msg.content | linkify }}</div>
+            {% endif %}
+        {% elif msg.sticker %}
+            <img src="{{ url_for('static', filename=msg.sticker) }}" class="sticker-image">
+        {% elif msg.image %}
+            <img src="{{ url_for('static', filename=msg.image) }}" style="max-width:200px;border-radius:8px;">
+            {% if msg.content %}
+            <div style="margin-top:6px;">{{ msg.content | linkify }}</div>
+            {% endif %}
+        {% elif msg.music %}
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:200px;">
+                {% if msg.music_title %}
+                <div style="font-size:13px;font-weight:500;">{{ msg.music_title }}</div>
+                {% endif %}
+                <audio controls src="{{ url_for('static', filename=msg.music) }}" style="width:100%;"></audio>
+            </div>
+            {% if msg.content %}
+            <div style="margin-top:6px;">{{ msg.content | linkify }}</div>
+            {% endif %}
+        {% else %}
+            <span class="bubble-text">{{ msg.content | linkify }}</span>
+        {% endif %}
+        <span class="time">{{ msg.created_at }}</span>
+        {% if msg.sender_id == session['user_id'] and is_basic %}
+        <div class="msg-actions">
+            {% if not msg.sticker and not msg.image and not msg.music %}
+            <button class="msg-edit" data-id="{{ msg.id }}"><i class="fa-solid fa-pen"></i></button>
+            {% endif %}
+            <button class="msg-delete" data-id="{{ msg.id }}"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{% if not allow_messaging %}
+<div style="padding:16px;text-align:center;background:var(--soft-1);border-top:1px solid var(--border-soft);color:var(--muted);font-size:14px;">
+    💬 {{ active_user.username }} has disabled direct messages
+</div>
+{% else %}
+
+<div class="chat-input">
+    <input id="msgInput" placeholder="Type a message..." autocomplete="off">
+    <label style="margin:0 4px;cursor:pointer;" title="Send Image">
+        <i class="fa-regular fa-image" style="font-size:22px;color:var(--muted);"></i>
+        <input id="imgInput" type="file" accept="image/*" style="display:none;">
+    </label>
+    {% if is_premium %}
+    <label style="margin:0 4px;cursor:pointer;" title="Send Music">
+        <i class="fa-solid fa-music" style="font-size:22px;color:var(--muted);"></i>
+        <input id="musicInput" type="file" accept="audio/*" style="display:none;">
+    </label>
+    {% endif %}
+    {% if is_basic %}
+    <button id="stickerBtn" title="Stickers" type="button" style="background:transparent;border:none;cursor:pointer;">
+        <i class="fa-regular fa-face-smile" style="font-size:22px;color:var(--muted);"></i>
+    </button>
+    {% endif %}
+    <button id="moneyBtn" title="Send Money (Pro)" type="button" style="background:transparent;border:none;cursor:pointer;display:none;">
+        <i class="fa-solid fa-dollar-sign" style="font-size:22px;color:#10b981;"></i>
+    </button>
+    <button id="sendBtn">Send</button>
+</div>
+<div id="moneyPanel" style="position:absolute;right:18px;bottom:76px;background:var(--card);border:1px solid var(--soft-2);border-radius:12px;padding:12px;display:none;box-shadow:var(--shadow-soft);z-index:10;">
+    <div style="margin-bottom:8px;font-weight:600;color:var(--text);">Send Money</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <span style="color:var(--muted);font-size:18px;">$</span>
+        <input id="moneyAmount" type="number" class="money-input" placeholder="0.00" step="0.01" min="0.01">
+        <button id="confirmMoneyBtn" class="money-send-btn">Send</button>
+    </div>
+    <div style="margin-top:6px;font-size:11px;color:var(--muted);">Pro feature</div>
+</div>
+
+{% endif %}
+{% if is_basic %}
+<div id="stickerPanel" class="sticker-panel">
+    {% if stickers %}
+        {% for pack in stickers %}
+            {% set imgs = pack.images.split(',') if pack.images else [] %}
+            {% for img in imgs %}
+                {% set owned = pack.id in purchased_stickers %}
+                <button class="sticker-btn {% if not owned %}sticker-locked{% endif %}" data-sticker="{{ img }}" {% if not owned %}disabled{% endif %}>
+                    <img src="{{ url_for('static', filename=img) }}">
+                    {% if not owned %}<span class="sticker-lock"><i class="fa-solid fa-lock"></i></span>{% endif %}
+                </button>
+            {% endfor %}
+        {% endfor %}
+    {% else %}
+        <div style="padding:8px;color:var(--muted);font-size:13px;">No stickers yet.</div>
+    {% endif %}
+    <div style="padding:6px 4px;color:var(--muted);font-size:12px;">Buy sticker packs in Shop to unlock.</div>
+</div>
+{% endif %}
+{% else %}
+<div class="empty">Select a chat to start messaging</div>
+{% endif %}
+</div>
+</div>
+{% if active_user %}
+<script>
+const socket = io();
+const SENDER   = Number("{{ session['user_id'] }}");
+const RECEIVER = Number("{{ active_user.id }}");
+const IS_BASIC = {{ 'true' if is_basic else 'false' }};
+const IS_PRO = {{ 'true' if is_pro else 'false' }};
+const ROOM = "chat_" + Math.min(SENDER, RECEIVER) + "_" + Math.max(SENDER, RECEIVER);
+socket.emit("join", { room: ROOM });
+
+const chatBody = document.getElementById("chatBody");
+const input    = document.getElementById("msgInput");
+const sendBtn  = document.getElementById("sendBtn");
+const imgInput = document.getElementById("imgInput");
+const musicInput = document.getElementById("musicInput");
+const stickerBtn = document.getElementById("stickerBtn");
+const stickerPanel = document.getElementById("stickerPanel");
+const moneyBtn = document.getElementById("moneyBtn");
+const moneyPanel = document.getElementById("moneyPanel");
+const moneyAmount = document.getElementById("moneyAmount");
+const confirmMoneyBtn = document.getElementById("confirmMoneyBtn");
+
+let pendingImage = null;
+let pendingMusic = null;
+let pendingMusicTitle = null;
+
+// Show money button for Pro users
+if(IS_PRO && moneyBtn){
+    moneyBtn.style.display = 'block';
+}
+
+// Image upload handler
+if(imgInput) {
+    document.querySelector('label[title="Send Image"]').addEventListener('click', () => imgInput.click());
+    imgInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'image');
+        
+        try {
+            const res = await fetch('/upload_message_file', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.success) {
+                pendingImage = data.filepath;
+                sendMessage();
+            }
+        } catch(err) { console.error(err); }
+    });
+}
+
+// Music upload handler
+if(musicInput) {
+    document.querySelector('label[title="Send Music"]').addEventListener('click', () => musicInput.click());
+    musicInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'music');
+        
+        try {
+            const res = await fetch('/upload_message_file', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.success) {
+                pendingMusic = data.filepath;
+                pendingMusicTitle = data.filename;
+                sendMessage();
+            }
+        } catch(err) { console.error(err); }
+    });
+}
+
+sendBtn.onclick = sendMessage;
+input.addEventListener("keydown", e => { if(e.key === "Enter") sendMessage(); });
+
+function sendMessage(){
+    const text = input.value.trim();
+    if(!text && !pendingImage && !pendingMusic) return;
+    socket.emit("send_message", {
+        sender: SENDER,
+        receiver: RECEIVER,
+        content: text,
+        image: pendingImage,
+        music: pendingMusic,
+        music_title: pendingMusicTitle
+    });
+    input.value = "";
+    pendingImage = null;
+    pendingMusic = null;
+    pendingMusicTitle = null;
+}
+socket.on("receive_message", data => {
+    renderMessage(data);
+});
+
+socket.on("message_edited", data => {
+    const row = chatBody.querySelector(`[data-id="${data.id}"]`);
+    if(row) {
+        const bubbleText = row.querySelector('.bubble-text');
+        if(bubbleText) bubbleText.textContent = data.content;
+    }
+});
+
+socket.on("message_deleted", data => {
+    const row = chatBody.querySelector(`[data-id="${data.id}"]`);
+    if(row) row.remove();
+});
+
+function renderMessage(data){
+    const row = document.createElement("div");
+    row.className = "message-row " + (data.sender === SENDER ? "sent" : "received");
+    row.dataset.id = data.id;
+    const isSticker = !!data.sticker;
+    const isMoney = data.money_amount && parseFloat(data.money_amount) > 0;
+    const hasImage = !!data.image;
+    const hasMusic = !!data.music;
+    
+    let contentHtml = '';
+    if(isMoney){
+        contentHtml = `<div class="money-badge"><i class="fa-solid fa-coins"></i> $${parseFloat(data.money_amount).toFixed(2)}</div>`;
+        if(data.content) contentHtml += `<div style="margin-top:6px;">${data.content}</div>`;
+    } else if(isSticker){
+        contentHtml = `<img src="/static/${data.sticker}" class="sticker-image">`;
+    } else if(hasImage){
+        contentHtml = `<img src="/static/${data.image}" style="max-width:200px;border-radius:8px;">`;
+        if(data.content) contentHtml += `<div style="margin-top:6px;">${data.content}</div>`;
+    } else if(hasMusic){
+        contentHtml = `<div style="display:flex;flex-direction:column;gap:6px;min-width:200px;">`;
+        if(data.music_title) contentHtml += `<div style="font-size:13px;font-weight:500;">${data.music_title}</div>`;
+        contentHtml += `<audio controls src="/static/${data.music}" style="width:100%;"></audio></div>`;
+        if(data.content) contentHtml += `<div style="margin-top:6px;">${data.content}</div>`;
+    } else if(data.content) {
+        contentHtml = `<span class="bubble-text">${data.content}</span>`;
+    } else {
+        contentHtml = `<span class="bubble-text" style="color:var(--muted);">📎 Media message</span>`;
+    }
+
+    let actionsHtml = '';
+    if(IS_BASIC && data.sender === SENDER && !isMoney) {
+        const editBtn = (isSticker || hasImage || hasMusic) ? '' : `<button class="msg-edit" data-id="${data.id}"><i class="fa-solid fa-pen"></i></button>`;
+        actionsHtml = `<div class="msg-actions">${editBtn}<button class="msg-delete" data-id="${data.id}"><i class="fa-solid fa-trash"></i></button></div>`;
+    }
+
+    row.innerHTML = `
+        <div class="bubble">
+            ${contentHtml}
+            <span class="time">just now</span>
+            ${actionsHtml}
+        </div>
+    `;
+    chatBody.appendChild(row);
+    chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+if(stickerBtn && stickerPanel){
+    stickerBtn.addEventListener('click', () => {
+        stickerPanel.style.display = stickerPanel.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', (e) => {
+        if(!stickerPanel.contains(e.target) && e.target !== stickerBtn){
+            stickerPanel.style.display = 'none';
+        }
+    });
+    stickerPanel.querySelectorAll('.sticker-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if(btn.disabled) return;
+            const sticker = btn.dataset.sticker;
+            socket.emit("send_message", {
+                sender: SENDER,
+                receiver: RECEIVER,
+                content: null,
+                sticker: sticker,
+                image: null,
+                music: null,
+                music_title: null
+            });
+            stickerPanel.style.display = 'none';
+        });
+    });
+}
+
+if(chatBody){
+    chatBody.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.msg-edit');
+        const delBtn = e.target.closest('.msg-delete');
+        if(editBtn){
+            const id = editBtn.dataset.id;
+            const row = chatBody.querySelector(`[data-id="${id}"]`);
+            const currentText = row?.querySelector('.bubble-text')?.textContent || '';
+            const next = prompt('Edit message', currentText);
+            if(next && next.trim()){
+                await fetch(`/messages/edit/${id}`, {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({content: next.trim()})
+                });
+            }
+        }
+        if(delBtn){
+            const id = delBtn.dataset.id;
+            if(confirm('Delete this message?')){
+                await fetch(`/messages/delete/${id}`, { method:'POST' });
+            }
+        }
+    });
+}
+
+if(moneyBtn && moneyPanel){
+    moneyBtn.addEventListener('click', () => {
+        moneyPanel.style.display = moneyPanel.style.display === 'block' ? 'none' : 'block';
+        if(stickerPanel) stickerPanel.style.display = 'none';
+    });
+    
+    document.addEventListener('click', (e) => {
+        if(!moneyPanel.contains(e.target) && e.target !== moneyBtn && !moneyBtn.contains(e.target)){
+            moneyPanel.style.display = 'none';
+        }
+    });
+    
+    confirmMoneyBtn.addEventListener('click', () => {
+        const amount = parseFloat(moneyAmount.value);
+        if(!amount || amount <= 0){
+            alert('Please enter a valid amount');
+            return;
+        }
+        const msg = input.value.trim();
+        socket.emit("send_message", {
+            sender: SENDER,
+            receiver: RECEIVER,
+            content: msg,
+            money_amount: amount,
+            sticker: null,
+            image: null,
+            music: null,
+            music_title: null
+        });
+        input.value = "";
+        moneyAmount.value = "";
+        moneyPanel.style.display = 'none';
+    });
+}
+</script>
+{% endif %}
+</body>
+</html>
+

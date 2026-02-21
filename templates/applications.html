@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Applications Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .app-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .app-header h1 {
+            color: var(--text);
+            margin: 0;
+        }
+        .app-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-soft);
+        }
+        .stat-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            color: var(--accent);
+        }
+        .stat-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .applications-grid {
+            display: grid;
+            gap: 16px;
+        }
+        .app-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-soft);
+        }
+        .app-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .app-card-header img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .app-user-info h3 {
+            margin: 0 0 4px 0;
+            color: var(--text);
+            font-size: 16px;
+        }
+        .app-user-info p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .app-type-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        .app-type-vip { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .app-type-access_plus { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .app-type-ambassador { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        .app-type-team { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        .category-feature { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .category-improvement { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .category-ui { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        .category-other { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+        .app-content {
+            margin-bottom: 16px;
+        }
+        .section-divider {
+            margin: 50px 0 30px 0;
+            border-top: 2px solid var(--border);
+            padding-top: 30px;
+        }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .section-title h2 {
+            margin: 0;
+            color: var(--text);
+            font-size: 24px;
+        }
+        .section-title .badge {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .implemented-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+        .implemented-btn:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            transform: translateY(-1px);
+        }
+        .status-implemented { background: #e9d5ff; color: #6b21a8; }
+        .app-content h4 {
+            margin: 0 0 8px 0;
+            color: var(--text);
+            font-size: 14px;
+        }
+        .app-content p {
+            margin: 0 0 12px 0;
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .app-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .app-actions button {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+        }
+        .approve-btn {
+            background: #10b981;
+            color: white;
+        }
+        .approve-btn:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .reject-btn {
+            background: #ef4444;
+            color: white;
+        }
+        .reject-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+        .pending-btn {
+            background: var(--soft-1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .pending-btn:hover {
+            background: var(--soft-2);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+        .back-btn {
+            background: var(--soft-1);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            display: inline-block;
+        }
+        .back-btn:hover {
+            background: var(--soft-2);
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="app-container">
+    <div class="app-header">
+        <h1><i class="fa-solid fa-clipboard-list"></i> Applications</h1>
+        <a href="/dashboard" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="app-stats">
+        <div class="stat-card">
+            <h3>{{ applications|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+            <p>Pending</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ applications|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
+            <p>Approved</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ applications|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
+            <p>Rejected</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ applications|length }}</h3>
+            <p>Total Applications</p>
+        </div>
+    </div>
+
+    <div class="applications-grid">
+        {% for app in applications %}
+        <div class="app-card">
+            <div class="app-card-header">
+                <img src="{{ url_for('static', filename=app.avatar or 'avatars/default.png') }}" alt="{{ app.username }}">
+                <div class="app-user-info">
+                    <h3>{{ app.username }}</h3>
+                    <p>{{ app.email }} • {{ app.created_at }}</p>
+                </div>
+                <span class="app-type-badge app-type-{{ app.application_type }}">
+                    {% if app.application_type == 'vip' %}VIP Access
+                    {% elif app.application_type == 'access_plus' %}Access+
+                    {% elif app.application_type == 'ambassador' %}Ambassador
+                    {% elif app.application_type == 'team' %}Team
+                    {% endif %}
+                </span>
+                <span class="status-badge status-{{ app.status }}">{{ app.status|upper }}</span>
+            </div>
+
+            <div class="app-content">
+                <h4><i class="fa-solid fa-comment-dots"></i> Why they're applying:</h4>
+                <p>{{ app.reason }}</p>
+
+                {% if app.experience %}
+                <h4><i class="fa-solid fa-star"></i> Experience:</h4>
+                <p>{{ app.experience }}</p>
+                {% endif %}
+
+                {% if app.contact %}
+                <h4><i class="fa-solid fa-envelope"></i> Contact:</h4>
+                <p>{{ app.contact }}</p>
+                {% endif %}
+            </div>
+
+            <div class="app-actions">
+                <button class="approve-btn" onclick="updateApplication({{ app.id }}, 'approved')">
+                    <i class="fa-solid fa-check"></i> Approve
+                </button>
+                <button class="pending-btn" onclick="updateApplication({{ app.id }}, 'pending')">
+                    <i class="fa-solid fa-clock"></i> Pending
+                </button>
+                <button class="reject-btn" onclick="updateApplication({{ app.id }}, 'rejected')">
+                    <i class="fa-solid fa-times"></i> Reject
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; color: var(--muted);">
+            <i class="fa-solid fa-inbox" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+            <p>No applications yet</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- User Suggestions Section -->
+    <div class="section-divider">
+        <div class="section-title">
+            <h2><i class="fa-solid fa-lightbulb"></i> User Ideas & Suggestions</h2>
+            <span class="badge">{{ suggestions|length }}</span>
+        </div>
+        
+        <div class="applications-grid">
+            {% for suggestion in suggestions %}
+            <div class="app-card">
+                <div class="app-card-header">
+                    <img src="{{ url_for('static', filename=suggestion.avatar or 'avatars/default.png') }}" alt="{{ suggestion.username }}">
+                    <div class="app-user-info">
+                        <h3>{{ suggestion.username }}</h3>
+                        <p>{{ suggestion.email }} • {{ suggestion.created_at }}</p>
+                    </div>
+                    <span class="category-badge category-{{ suggestion.category }}">
+                        {% if suggestion.category == 'feature' %}<i class="fa-solid fa-star"></i> Feature
+                        {% elif suggestion.category == 'improvement' %}<i class="fa-solid fa-arrow-up"></i> Improvement
+                        {% elif suggestion.category == 'ui' %}<i class="fa-solid fa-palette"></i> UI/Design
+                        {% else %}<i class="fa-solid fa-ellipsis"></i> Other
+                        {% endif %}
+                    </span>
+                    <span class="status-badge status-{{ suggestion.status }}">{{ suggestion.status|upper }}</span>
+                </div>
+
+                <div class="app-content">
+                    <h4><i class="fa-solid fa-heading"></i> {{ suggestion.title }}</h4>
+                    <p>{{ suggestion.description }}</p>
+                </div>
+
+                <div class="app-actions">
+                    <button class="approve-btn" onclick="updateSuggestion({{ suggestion.id }}, 'approved')">
+                        <i class="fa-solid fa-check"></i> Approve
+                    </button>
+                    <button class="implemented-btn" onclick="updateSuggestion({{ suggestion.id }}, 'implemented')">
+                        <i class="fa-solid fa-code"></i> Implemented
+                    </button>
+                    <button class="pending-btn" onclick="updateSuggestion({{ suggestion.id }}, 'pending')">
+                        <i class="fa-solid fa-clock"></i> Pending
+                    </button>
+                    <button class="reject-btn" onclick="updateSuggestion({{ suggestion.id }}, 'rejected')">
+                        <i class="fa-solid fa-times"></i> Reject
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 60px 20px; color: var(--muted);">
+                <i class="fa-solid fa-lightbulb" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                <p>No suggestions yet</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+function updateApplication(appId, status) {
+    if (!confirm(`Are you sure you want to mark this application as ${status}?`)) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('status', status);
+
+    fetch(`/application/${appId}/update`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+            location.reload();
+        } else {
+            alert('❌ ' + (data.message || 'Failed to update application'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Failed to update application');
+    });
+}
+
+function updateSuggestion(suggestionId, status) {
+    if (!confirm(`Are you sure you want to mark this suggestion as ${status}?`)) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('status', status);
+
+    fetch(`/suggestion/${suggestionId}/update`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+            location.reload();
+        } else {
+            alert('❌ ' + (data.message || 'Failed to update suggestion'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Failed to update suggestion');
+    });
+}
+</script>
+
+</body>
+</html>

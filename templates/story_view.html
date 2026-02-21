@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ story.username }}'s Story</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .story-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .story-card {
+            width: 350px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            padding: 15px;
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .post-header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .username { font-weight: bold; }
+        .timestamp { font-size: 12px; color: gray; }
+        .story-image {
+            margin-top: 10px;
+            border-radius: 12px;
+            width: 100%;
+            object-fit: cover;
+        }
+        .post-content {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .story-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .story-actions button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 12px;
+            background-color: #FFB6C1;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .story-actions button:hover {
+            background-color: #e599b7;
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="story-container">
+    <div class="story-card">
+        <div class="post-header">
+            <img src="{{ url_for('static', filename=story.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+            <div>
+                <div class="username">
+                    {{ story.username }} {{ story.user_id | online_status }}
+                    {% if story.user_subscription == 'premium' %}
+                        <span class="admin-badge">ADMIN</span>
+                    {% endif %}
+                </div>
+                <div class="timestamp">{{ story.created_at }}</div>
+            </div>
+        </div>
+
+        {% if story.image %}
+        <img src="{{ url_for('static', filename=story.image) }}" class="story-image">
+        {% endif %}
+
+        <div class="post-content">{{ story.content }}</div>
+
+        <div class="story-actions">
+            <a href="/forum"><button>Back to Feed</button></a>
+
+            {% if session.user_id == story.user_id %}
+            <form method="POST" action="/story/{{ story.id }}/delete" style="display:inline;">
+                <button type="submit">Delete Story</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

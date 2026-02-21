@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ post.username }}'s Post</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 30px; background: #f0f0f0; }
+        .post-view { background: white; border-radius: 15px; padding: 20px; max-width: 600px; width: 100%; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+        .post-view img { width: 100%; border-radius: 12px; margin-bottom: 15px; cursor: pointer; }
+        .username { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .timestamp { color: gray; font-size: 12px; margin-bottom: 15px; }
+        .post-content { font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+        .back-btn { margin-top: 10px; padding: 6px 12px; border-radius: 12px; border: none; background: #FFB6C1; color: white; cursor: pointer; }
+        .back-btn:hover { background: #e599b7; }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+    <div class="post-view">
+        <div class="username">
+            {{ post.username }} {{ post.user_id | online_status }}
+            {% if post.user_subscription == 'premium' %}
+                <span class="admin-badge">ADMIN</span>
+            {% endif %}
+        </div>
+        <div class="timestamp">{{ post.created_at }}</div>
+
+        {% if post.image %}
+        <img src="{{ url_for('static', filename=post.image) }}">
+        {% endif %}
+
+        {% if post.music %}
+        <div class="music-post" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-size:16px;color:#bbb;">&#9835;</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                {% if post.music_title %}
+                <span style="font-size:13px;color:var(--text);font-weight:500;">{{ post.music_title }}</span>
+                {% endif %}
+                <audio controls src="{{ url_for('static', filename=post.music) }}" style="flex:1;height:28px;"></audio>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="post-content">{{ post.content or "No content" }}</div>
+
+        <button class="back-btn" onclick="window.history.back()">Back</button>
+    </div>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Suggest an Idea</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .suggest-container {
+            max-width: 700px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+        .suggest-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow-soft);
+        }
+        .suggest-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .suggest-header i {
+            font-size: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+        .suggest-header h1 {
+            margin: 0 0 8px 0;
+            color: var(--text);
+            font-size: 28px;
+        }
+        .suggest-header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--soft-1);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: var(--card);
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+            text-align: center;
+            width: 100%;
+        }
+        .back-link:hover {
+            color: var(--text);
+        }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .category-option {
+            position: relative;
+        }
+        .category-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        .category-option label {
+            display: block;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--soft-1);
+        }
+        .category-option input:checked + label {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            font-weight: 600;
+        }
+        .category-option label i {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="suggest-container">
+    <div class="suggest-card">
+        <div class="suggest-header">
+            <i class="fa-solid fa-lightbulb"></i>
+            <h1>Suggest an Idea</h1>
+            <p>Help us improve! Share your ideas and feature requests.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div style="padding: 12px 16px; margin-bottom: 20px; border-radius: 10px; background: {% if category == 'error' %}#fee2e2; color: #991b1b;{% else %}#d1fae5; color: #065f46;{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label><i class="fa-solid fa-tag"></i> Category</label>
+                <div class="category-grid">
+                    <div class="category-option">
+                        <input type="radio" name="category" value="feature" id="cat-feature" checked>
+                        <label for="cat-feature">
+                            <i class="fa-solid fa-star"></i>
+                            New Feature
+                        </label>
+                    </div>
+                    <div class="category-option">
+                        <input type="radio" name="category" value="improvement" id="cat-improvement">
+                        <label for="cat-improvement">
+                            <i class="fa-solid fa-arrow-up"></i>
+                            Improvement
+                        </label>
+                    </div>
+                    <div class="category-option">
+                        <input type="radio" name="category" value="ui" id="cat-ui">
+                        <label for="cat-ui">
+                            <i class="fa-solid fa-palette"></i>
+                            UI/Design
+                        </label>
+                    </div>
+                    <div class="category-option">
+                        <input type="radio" name="category" value="other" id="cat-other">
+                        <label for="cat-other">
+                            <i class="fa-solid fa-ellipsis"></i>
+                            Other
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="title"><i class="fa-solid fa-heading"></i> Idea Title *</label>
+                <input type="text" id="title" name="title" placeholder="e.g., Add dark mode to profile page" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description"><i class="fa-solid fa-file-lines"></i> Description *</label>
+                <textarea id="description" name="description" placeholder="Describe your idea in detail. What problem does it solve? How would it work?" required></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                <i class="fa-solid fa-paper-plane"></i> Submit Idea
+            </button>
+        </form>
+
+        <a href="/forum" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i> Back to Forum
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

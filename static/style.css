@@ -1,0 +1,996 @@
+/* =======================
+   Root Variables
+======================= */
+:root{
+    --bg: linear-gradient(135deg, #f6f7f9 0%, #f1f3f6 45%, #eef1f5 100%);
+    --card: rgba(255,255,255,0.98);
+
+    --soft-1: #f4f6f8;
+    --soft-2: #eef0f3;
+    --soft-3: #e1e5ea;
+    --border: #7f7f7f;
+    --border-soft: #cfd4da;
+
+    --button-bg: #ffffff;
+    --button-text: #1f2328;
+    --button-border: #7f7f7f;
+
+    --text: #1f2328;
+    --muted: #6b737d;
+
+    --accent: #2f3b47;
+    --accent-2: #445262;
+    --accent-hover: #22303a;
+
+    --shadow-soft:
+        0 1px 2px rgba(16,24,40,.05),
+        0 6px 14px rgba(16,24,40,.08);
+    --shadow-medium:
+        0 2px 4px rgba(16,24,40,.06),
+        0 12px 28px rgba(16,24,40,.12);
+
+    --radius: 22px;
+
+    --primary-gradient: linear-gradient(135deg, #3d5a80 0%, #5c7fa3 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #2c4a6e 0%, #4a6d91 100%);
+    --soft-gradient: linear-gradient(135deg, #f4f5f7, #e8eaed);
+    --soft-gradient-hover: linear-gradient(135deg, #e8eaed, #dde0e6);
+
+    /* keep old name so existing references still work */
+    --pink-gradient: linear-gradient(135deg, #3d5a80 0%, #5c7fa3 100%);
+    --pink-gradient-hover: linear-gradient(135deg, #2c4a6e 0%, #4a6d91 100%);
+}
+
+/* =======================
+    Dark Theme Variables
+======================= *//* slider switch for dark mode toggle */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--soft-2);
+    transition: .4s;
+    border-radius: 34px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+input:checked + .slider {
+    background: var(--primary-gradient);
+}
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+.dark-theme {
+    --bg: linear-gradient(135deg, #12141a 0%, #1a1d26 40%, #0f1117 100%);
+    --card: rgba(69, 71, 78, 0.97);
+    --soft-1: #24252a;
+    --soft-2: #1e1f21;
+    --soft-3: #0f1117;
+    --border: #4b4f55;
+    --border-soft: #2f3338;
+    --button-bg: #24252a;
+    --button-text: #e8eaf0;
+    --button-border: #4b4f55;
+    --text: #e8eaf0;
+    --muted: #7a8394;
+    --accent: #5d6165;
+    --accent-2: #6f767e;
+    --accent-hover: #4a6d91;
+    --shadow-soft:
+        0 1px 2px rgba(0,0,0,.28),
+        0 8px 22px rgba(0,0,0,.45);
+    --shadow-medium:
+        0 2px 6px rgba(0,0,0,.35),
+        0 16px 40px rgba(0,0,0,.55);
+    --primary-gradient: linear-gradient(135deg, #3c3e41 0%, #6e7277 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #323334 0%, #979a9d 100%);
+    --soft-gradient: linear-gradient(135deg, #303136, #2f3034);
+    --soft-gradient-hover: linear-gradient(135deg, #161924, #0f1117);
+    --pink-gradient: linear-gradient(135deg, #2a2a2b 0%, #3d5a80 100%);
+    --pink-gradient-hover: linear-gradient(135deg, #414448 0%, #474849 100%);
+}
+
+/* =======================
+   Reset
+======================= */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.admin-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--primary-gradient);
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.vip-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.vip-pink { background: linear-gradient(135deg, #ff6ec4, #ff9a9e); color: #fff; }
+.vip-gold { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #333; }
+.vip-blue { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.vip-purple { background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333; }
+.vip-green { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; }
+
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: #1d9bf0;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.online-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #31a24c;
+    color: #fff;
+    font-size: 9px;
+    margin-left: 4px;
+    vertical-align: middle;
+    animation: pulse-online 2s infinite;
+    box-shadow: 0 0 8px rgba(49, 162, 76, 0.8);
+}
+
+.offline-badge {
+    display: none;
+}
+
+@keyframes pulse-online {
+    0% {
+        box-shadow: 0 0 8px rgba(49, 162, 76, 0.8), 0 0 0 0 rgba(49, 162, 76, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 8px rgba(49, 162, 76, 0.8), 0 0 0 10px rgba(49, 162, 76, 0);
+    }
+    100% {
+        box-shadow: 0 0 8px rgba(49, 162, 76, 0.8), 0 0 0 0 rgba(49, 162, 76, 0);
+    }
+}
+
+/* =======================
+   Layout
+======================= */
+.container {
+    max-width: 1300px;
+    margin: auto;
+    padding: 30px;
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 26px;
+    align-items: flex-start;
+}
+
+.feed {
+    flex: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* =======================
+   Sidebar
+======================= */
+.sidebar {
+    width: 230px;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    height: fit-content;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(8px);
+}
+
+.sidebar h3 {
+    margin-bottom: 14px;
+    color: var(--text);
+}
+
+.sidebar a {
+    display: block;
+    padding: 11px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    transition: background .2s, color .2s, box-shadow .2s;
+}
+
+.sidebar a:hover {
+    background: var(--soft-1);
+    color: var(--text);
+    box-shadow: 0 0 0 3px rgba(61,90,128,.08);
+}
+
+/* =======================
+   Story Box
+======================= */
+.story-box {
+    background: var(--card);
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+}
+
+.story-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.story-btn {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-border);
+    padding: 7px 16px;
+    border-radius: 18px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 8px 18px rgba(31,35,40,.12);
+    transition: background .2s, transform .15s, box-shadow .2s;
+}
+.story-btn:hover {
+    background: var(--soft-1);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(31,35,40,.16);
+}
+
+.story-strip {
+    display: flex;
+    gap: 14px;
+}
+
+.story-item {
+    text-align: center;
+    cursor: pointer;
+}
+
+.story-item img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid var(--accent);
+    box-shadow: 0 6px 16px rgba(0,0,0,.12), inset 0 0 0 2px white;
+}
+
+/* =======================
+   Add Story Circle
+======================= */
+.add-story-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--soft-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 6px;
+    border: 1.5px solid var(--soft-3);
+    outline: none;
+    box-shadow: var(--shadow-soft);
+    transition: box-shadow .2s, border .2s, background .2s;
+}
+.add-story-circle:hover,
+.add-story-circle:focus {
+    box-shadow: 0 0 0 4px rgba(61,90,128,.15), var(--shadow-medium);
+    border: 1.5px solid var(--accent-2);
+    background: var(--soft-2);
+}
+.add-story-circle i {
+    color: var(--muted);
+    transition: color .2s;
+}
+.add-story-circle:hover i,
+.add-story-circle:focus i {
+    color: var(--accent);
+}
+
+/* =======================
+   Create Post
+======================= */
+.create-post {
+    background: var(--card);
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+}
+
+.create-post textarea {
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid var(--border-soft);
+    padding: 12px 15px;
+    resize: none;
+    background: var(--soft-1);
+    box-shadow: inset 0 1px 4px rgba(0,0,0,.04);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.create-post textarea:focus {
+    outline: none;
+    border-color: var(--border);
+}
+
+.create-post button {
+    margin-top: 10px;
+}
+
+/* =======================
+   Post Card
+======================= */
+.post-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: .3s;
+}
+
+.post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 5;
+}
+
+.post-header img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-user {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.post-content {
+    font-size: 14px;
+    line-height: 1.6;
+    pointer-events: auto;
+}
+
+.post-image {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+    border-radius: 18px;
+    margin-top: 8px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.12);
+}
+
+/* =======================
+   Post Footer
+======================= */
+.post-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+/* =======================
+   Like Button
+======================= */
+.like-btn {
+    min-width: 68px;
+    height: 42px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--button-bg);
+    border: 1px solid var(--border-soft);
+    box-shadow: 0 8px 18px rgba(31,35,40,.12);
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 600;
+    transition: .25s;
+}
+
+.like-btn i {
+    font-size: 17px;
+    color: var(--accent);
+}
+
+.like-btn:hover {
+    transform: scale(1.07);
+    background: var(--soft-1);
+    border-color: var(--border);
+}
+
+/* =======================
+   Chat Upload Icons
+======================= */
+.chat-upload-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: box-shadow .2s, background .2s;
+    margin-right: 8px;
+    border: none;
+    outline: none;
+}
+.chat-upload-label:hover,
+.chat-upload-label:focus {
+    box-shadow: 0 0 0 3px rgba(61,90,128,.15), 0 0 12px 2px rgba(61,90,128,.12);
+    background: var(--soft-1);
+}
+.chat-upload-icon {
+    font-size: 18px;
+    color: var(--muted);
+    transition: color .2s;
+}
+.chat-upload-label:hover .chat-upload-icon {
+    color: var(--accent);
+}
+
+/* =======================
+   Comment Bar
+======================= */
+.comment-form {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 16px 16px !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 20px -16px -16px -16px !important;
+}
+
+.comment-form input {
+    flex: 1 !important;
+    width: 100% !important;
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    padding: 10px 16px !important;
+    outline: none;
+    font-size: 14px;
+    color: var(--text);
+    border-radius: 20px;
+}
+
+.comment-form input:focus {
+    border-color: var(--accent);
+}
+
+/* =======================
+   Send Button
+======================= */
+.send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--button-border);
+    background: var(--button-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 18px rgba(31,35,40,.14);
+    cursor: pointer;
+    transition: .3s;
+}
+
+.send-btn svg {
+    fill: var(--button-text);
+    width: 17px;
+}
+
+.send-btn:hover {
+    transform: scale(1.12);
+    background: var(--soft-1);
+}
+
+/* =======================
+   Delete / Action Buttons
+======================= */
+.delete-btn,
+.delete-post {
+    background: var(--button-bg);
+    border: 1px solid var(--button-border);
+    padding: 7px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    color: #c0392b;
+    font-weight: 600;
+    font-size: 13px;
+    transition: background .2s, box-shadow .2s, border .2s;
+}
+
+.delete-btn:hover,
+.delete-post:hover {
+    background: #fdecea;
+    border-color: #e8b4b0;
+    box-shadow: 0 4px 12px rgba(192,57,43,.12);
+}
+
+/* =======================
+   Edit / Primary Button
+======================= */
+.edit-btn {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-border);
+    padding: 10px 20px;
+    border-radius: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(31,35,40,.12);
+    transition: background .2s, transform .15s, box-shadow .2s;
+}
+.edit-btn:hover {
+    background: var(--soft-1);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(31,35,40,.16);
+}
+
+/* =======================
+   Story Modal
+======================= */
+.story-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.92);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.story-modal img {
+    max-width: 90%;
+    max-height: 85vh;
+    border-radius: 20px;
+    object-fit: contain;
+}
+
+.close {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 34px;
+    color: white;
+    cursor: pointer;
+}
+
+.story-delete-btn {
+    background: linear-gradient(145deg, #444, #222);
+    border: none;
+    color: white;
+    padding: 9px 16px;
+    border-radius: 18px;
+    cursor: pointer;
+}
+
+/* =======================
+   Auth Pages
+======================= */
+.form-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top, #ffffff, #f0f2f5 55%, #e8eaf0);
+}
+
+.form-container {
+    width: 380px;
+    background: var(--card);
+    border-radius: 28px;
+    padding: 36px 34px 34px;
+    box-shadow: var(--shadow-medium);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+}
+
+.form-container h2 {
+    font-size: 22px;
+    margin-bottom: 6px;
+    color: var(--text);
+}
+
+.form-container input {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--soft-3);
+    background: var(--soft-1);
+    box-shadow:
+        inset 1px 1px 4px rgba(255,255,255,.9),
+        inset -1px -1px 4px rgba(0,0,0,.04);
+    font-size: 14px;
+    color: var(--text);
+}
+
+.form-container input:focus {
+    outline: none;
+    border-color: var(--accent-2);
+}
+
+.form-container button {
+    margin-top: 6px;
+    height: 46px;
+    border-radius: 18px;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(61,90,128,.22);
+    transition: background .2s, transform .15s;
+}
+
+.form-container button:hover {
+    background: var(--primary-gradient-hover);
+    transform: scale(1.03);
+}
+
+.form-container a {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.form-container a:hover {
+    color: var(--accent);
+}
+
+/* =======================
+   Profile Page
+======================= */
+.profile-header {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--shadow-soft);
+}
+
+.profile-header img {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 6px 16px rgba(0,0,0,.18);
+}
+
+.profile-header p {
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.profile-edit {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow-soft);
+}
+
+/* =======================
+   Album
+======================= */
+.album-header {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.album-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px;
+}
+
+.album-grid img {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.10);
+    transition: .25s;
+}
+
+.album-grid img:hover {
+    transform: scale(1.06);
+}
+
+/* =======================
+   Post Bar (Profile)
+======================= */
+.story-bar {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    display: flex;
+    gap: 12px;
+    box-shadow: var(--shadow-soft);
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.story-bar textarea {
+    flex: 1;
+    border-radius: 14px;
+    padding: 12px;
+    border: 1px solid var(--soft-3);
+    background: var(--soft-1);
+    color: var(--text);
+}
+
+/* =======================
+   Edit Modal
+======================= */
+.edit-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+}
+
+.edit-modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.edit-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    padding: 22px;
+    border-radius: 22px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.22);
+    animation: popup .25s ease;
+}
+
+@keyframes popup {
+    from { transform: scale(.85); opacity: 0 }
+    to   { transform: scale(1);   opacity: 1 }
+}
+
+.edit-card h3 {
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.edit-card textarea,
+.edit-card input {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--soft-3);
+    background: var(--soft-1);
+    color: var(--text);
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.edit-actions button {
+    padding: 9px 18px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    background: var(--primary-gradient);
+    color: white;
+    font-weight: 600;
+    transition: background .2s;
+}
+
+.edit-actions button:hover {
+    background: var(--primary-gradient-hover);
+}
+
+/* =======================
+   Messages / Chat
+======================= */
+.chat-area {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    max-width: 80%;
+}
+
+.message-row.sent {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 3px 8px rgba(0,0,0,.12);
+}
+
+.bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,.07);
+}
+
+.sent .bubble {
+    background: var(--primary-gradient);
+    color: white;
+    border-bottom-right-radius: 6px;
+}
+
+.received .bubble {
+    background: var(--card);
+    border-bottom-left-radius: 6px;
+    border: 1px solid var(--soft-3);
+}
+
+.time {
+    display: block;
+    font-size: 11px;
+    margin-top: 6px;
+    opacity: .6;
+    text-align: right;
+}
+
+/* =======================
+   Custom File Label
+======================= */
+.custom-file {
+    display: inline-block;
+    position: relative;
+    margin-right: 10px;
+}
+.custom-file input[type="file"] {
+    display: none;
+}
+.custom-file-label {
+    display: inline-block;
+    background: #fff;
+    color: var(--text);
+    padding: 10px 22px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-soft);
+    transition: box-shadow .2s, border .2s;
+}
+.custom-file-label:hover,
+.custom-file-label:focus {
+    box-shadow: 0 0 0 4px rgba(61,90,128,.12), var(--shadow-medium);
+    border: 1.5px solid var(--accent-2);
+}
+
+/* =======================
+   Post bar textarea
+======================= */
+.post-bar-textarea {
+    width: 100%;
+    min-height: 80px;
+    border-radius: 16px;
+    border: 1.5px solid var(--border-soft);
+    padding: 14px;
+    font-size: 16px;
+    background: var(--soft-1);
+    color: var(--text);
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    transition: border .2s;
+}
+.post-bar-textarea:focus {
+        border-color: var(--border);
+    outline: none;
+}
+button:not(.edit-btn):not(.story-btn):not(.send-btn):not(.delete-btn):not(.delete-post) {
+    background: var(--button-bg);
+    border: 1px solid var(--border-soft);
+    color: var(--button-text);
+    box-shadow: var(--shadow-soft);
+}

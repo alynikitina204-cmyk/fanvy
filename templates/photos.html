@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photos • {{ user.username }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: var(--soft-1);
+        }
+        
+        .photo-item:hover {
+            transform: scale(1.03);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            padding: 12px 8px 8px;
+            color: white;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .photo-item:hover .photo-overlay {
+            opacity: 1;
+        }
+        
+        .photo-stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .photo-stats i {
+            margin-right: 4px;
+        }
+
+        .image-lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            cursor: zoom-out;
+        }
+        
+        .lightbox-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .lightbox-image-wrapper {
+            max-width: 90vw;
+            max-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-lightbox img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        
+        .lightbox-close {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 2001;
+        }
+        
+        .lightbox-btn {
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.15);
+            padding: 12px 24px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .lightbox-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        
+        .lightbox-btn.delete {
+            background: rgba(239,68,68,0.2);
+            border-color: rgba(239,68,68,0.4);
+        }
+        
+        .lightbox-btn.delete:hover {
+            background: rgba(239,68,68,0.35);
+        }
+        
+        .lightbox-caption {
+            color: white;
+            text-align: center;
+            padding: 0 20px;
+            max-width: 600px;
+        }
+        
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            font-size: 30px;
+            padding: 15px 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.2s;
+            z-index: 2001;
+        }
+        
+        .lightbox-nav:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .lightbox-nav.prev {
+            left: 30px;
+        }
+        
+        .lightbox-nav.next {
+            right: 30px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .filter-tab:hover {
+            background: var(--soft-1);
+        }
+        
+        .filter-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+        
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        /* Notification badge */
+        .notification-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+        .sidebar a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="container">
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h3>Hi {{ session.username }}</h3>
+    <a href="/forum">Community</a>
+    <a href="/friends">
+        <span>Friends</span>
+        {% if friend_requests_count > 0 %}
+        <span class="notification-badge">{{ friend_requests_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/followers">
+        <span>Followers</span>
+        {% if new_followers_count > 0 %}
+        <span class="notification-badge">{{ new_followers_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/messages">
+        <span>Messages</span>
+        {% if unread_messages_count > 0 %}
+        <span class="notification-badge">{{ unread_messages_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/profile">Profile</a>
+    <a href="/photos">Photos</a>
+    <a href="/watch">Watch Together</a>
+    {% if session.user_id == 1 %}
+    <a href="/shop">Shop</a>
+    <a href="/purchases">My Purchases</a>
+    {% endif %}
+    <a href="/subscription">Subscription</a>
+    <a href="/dashboard">Dashboard</a>
+</div>
+
+<div class="feed">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">
+            <i class="fa-regular fa-images"></i> My Photos
+        </h2>
+        <div style="color: var(--muted); font-size: 14px;">
+            {{ all_photos|length }} photo{{ 's' if all_photos|length != 1 else '' }}
+        </div>
+    </div>
+
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterPhotos('all')">
+            <i class="fa-solid fa-images"></i> All
+        </button>
+        <button class="filter-tab" onclick="filterPhotos('posts')">
+            <i class="fa-solid fa-newspaper"></i> Posts
+        </button>
+        <button class="filter-tab" onclick="filterPhotos('album')">
+            <i class="fa-solid fa-book"></i> Album
+        </button>
+    </div>
+
+    {% if all_photos %}
+    <div class="photo-grid" id="photoGrid">
+        {% for photo in all_photos %}
+        <div class="photo-item" data-type="{{ photo.type }}" onclick="openLightbox({{ loop.index0 }})">
+            <img src="{{ url_for('static', filename=photo.image) }}" alt="Photo">
+            <div class="photo-overlay">
+                <div class="photo-stats">
+                    {% if photo.type == 'post' or photo.type == 'forum_post' %}
+                    <span><i class="fa-solid fa-newspaper"></i> Post</span>
+                    {% else %}
+                    <span><i class="fa-solid fa-book"></i> Album</span>
+                    {% endif %}
+                    <span><i class="fa-regular fa-clock"></i> {{ photo.date }}</span>
+                </div>
+                {% if photo.caption %}
+                <div style="margin-top: 4px; font-size: 11px; opacity: 0.9;">{{ photo.caption[:50] }}...</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-regular fa-images"></i>
+        <h3>No photos yet</h3>
+        <p>Photos from your posts and album will appear here</p>
+        <a href="/profile" class="edit-btn" style="display: inline-block; margin-top: 16px; text-decoration: none;">
+            <i class="fa-solid fa-plus"></i> Add Photos
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+</div>
+
+<!-- Image Lightbox -->
+<div id="imageLightbox" class="image-lightbox" onclick="closeLightbox()">
+    <button class="lightbox-nav prev" onclick="event.stopPropagation(); prevPhoto()">&#10094;</button>
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+        <div class="lightbox-image-wrapper">
+            <img id="lightboxImage" src="">
+        </div>
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+    <button class="lightbox-nav next" onclick="event.stopPropagation(); nextPhoto()">&#10095;</button>
+    <div class="lightbox-close" onclick="event.stopPropagation()">
+        <button class="lightbox-btn" onclick="closeLightbox()">
+            <i class="fa-solid fa-xmark"></i> Close
+        </button>
+        <button class="lightbox-btn delete" onclick="deleteLightboxImage()">
+            <i class="fa-solid fa-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<script>
+const photos = {{ all_photos | tojson }};
+let currentPhotoIndex = 0;
+let filteredPhotos = [...photos];
+
+function openLightbox(index) {
+    currentPhotoIndex = index;
+    showPhoto();
+    document.getElementById('imageLightbox').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    document.getElementById('imageLightbox').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function showPhoto() {
+    if (filteredPhotos.length === 0) return;
+    
+    const photo = filteredPhotos[currentPhotoIndex];
+    document.getElementById('lightboxImage').src = "{{ url_for('static', filename='') }}" + photo.image;
+    
+    let caption = '';
+    if (photo.caption) {
+        caption = photo.caption;
+    }
+    if (photo.content) {
+        caption = photo.content;
+    }
+    caption += `<br><small style="opacity: 0.7;">${photo.type === 'post' ? 'From Post' : 'From Album'} • ${photo.date}</small>`;
+    
+    document.getElementById('lightboxCaption').innerHTML = caption;
+}
+
+function nextPhoto() {
+    if (currentPhotoIndex < filteredPhotos.length - 1) {
+        currentPhotoIndex++;
+        showPhoto();
+    }
+}
+
+function prevPhoto() {
+    if (currentPhotoIndex > 0) {
+        currentPhotoIndex--;
+        showPhoto();
+    }
+}
+
+function filterPhotos(type) {
+    // Update active tab
+    document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Filter photos
+    const photoItems = document.querySelectorAll('.photo-item');
+    
+    if (type === 'all') {
+        filteredPhotos = [...photos];
+        photoItems.forEach(item => item.style.display = 'block');
+    } else if (type === 'posts') {
+        filteredPhotos = photos.filter(p => p.type === 'post' || p.type === 'forum_post');
+        photoItems.forEach(item => {
+            if (item.dataset.type === 'post' || item.dataset.type === 'forum_post') {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    } else {
+        filteredPhotos = photos.filter(p => p.type === type);
+        photoItems.forEach(item => {
+            if (item.dataset.type === type) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    // Update photo index mapping
+    currentPhotoIndex = 0;
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    const lightbox = document.getElementById('imageLightbox');
+    if (lightbox.style.display === 'flex') {
+        if (e.key === 'ArrowRight') nextPhoto();
+        if (e.key === 'ArrowLeft') prevPhoto();
+        if (e.key === 'Escape') closeLightbox();
+    }
+});
+
+function deleteLightboxImage() {
+    if (filteredPhotos.length === 0) return;
+    
+    const photo = filteredPhotos[currentPhotoIndex];
+    
+    if (confirm('Are you sure you want to delete this image?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        
+        if (photo.type === 'post') {
+            form.action = '/profile/post/' + photo.id + '/delete';
+        } else if (photo.type === 'forum_post') {
+            form.action = '/delete_post/' + photo.id;
+        } else if (photo.type === 'album') {
+            form.action = '/album/' + photo.id + '/delete';
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+</body>
+</html>

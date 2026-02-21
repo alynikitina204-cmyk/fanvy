@@ -1,0 +1,228 @@
+<style>
+.wallet-icon-btn {
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:var(--button-bg);
+    border:1px solid var(--button-border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--button-text);
+    box-shadow:var(--shadow-soft);
+    transition:background .2s, box-shadow .2s, transform .15s;
+    text-decoration:none;
+    cursor: pointer;
+}
+.wallet-icon-btn:hover {
+    background:var(--soft-1);
+    box-shadow:var(--shadow-medium);
+    transform:scale(1.05);
+}
+.support-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+.support-modal-content {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.support-modal h3 {
+    margin: 0 0 8px 0;
+    color: var(--text);
+    font-size: 22px;
+}
+.support-modal p {
+    margin: 0 0 20px 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+.support-modal label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-weight: 500;
+    font-size: 14px;
+}
+.support-modal input,
+.support-modal select,
+.support-modal textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+.support-modal textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+.support-modal-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+.support-modal-buttons button {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.support-submit-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+.support-submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+.support-cancel-btn {
+    background: var(--soft-1);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+.support-cancel-btn:hover {
+    background: var(--soft-2);
+}
+</style>
+<div style="position:fixed;top:18px;right:22px;z-index:9999;display:flex;align-items:center;gap:14px;">
+    {% if session.user_id == 1 %}
+    <a href="/wallet" title="Wallet" class="wallet-icon-btn">
+        <i class="fa-solid fa-wallet" style="font-size:18px;"></i>
+    </a>
+    {% endif %}
+    <button onclick="openSupportModal()" title="Apply for VIP, Ambassador or Team" class="wallet-icon-btn">
+        <i class="fa-solid fa-headset" style="font-size:18px;"></i>
+    </button>
+    <div id="themeToggle">
+        <label class="switch">
+            <input type="checkbox" id="toggleBtn">
+            <span class="slider round"></span>
+        </label>
+    </div>
+</div>
+
+<!-- Support Application Modal -->
+<div id="supportModal" class="support-modal">
+    <div class="support-modal-content">
+        <h3>Submit Application</h3>
+        <p>Apply to become a VIP member, Ambassador, or join our team!</p>
+        
+        <form id="supportForm" method="POST" action="/submit_application">
+            <label for="applicationType">Application Type *</label>
+            <select id="applicationType" name="application_type" required>
+                <option value="">Select type...</option>
+                <option value="vip">VIP Access</option>
+                <option value="access_plus">Access+ Membership</option>
+                <option value="ambassador">Ambassador Program</option>
+                <option value="team">Join the Team</option>
+            </select>
+            
+            <label for="applicationReason">Why do you want to apply? *</label>
+            <textarea id="applicationReason" name="reason" placeholder="Tell us why you're interested and what you can bring..." required></textarea>
+            
+            <label for="applicationExperience">Relevant Experience (Optional)</label>
+            <textarea id="applicationExperience" name="experience" placeholder="Share any relevant experience or skills..."></textarea>
+            
+            <label for="applicationContact">Contact Info (Email/Discord/Social)</label>
+            <input type="text" id="applicationContact" name="contact" placeholder="How can we reach you?">
+            
+            <div class="support-modal-buttons">
+                <button type="button" class="support-cancel-btn" onclick="closeSupportModal()">Cancel</button>
+                <button type="submit" class="support-submit-btn">Submit Application</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+// theme toggle logic, reused on all pages
+const body = document.body;
+const toggleBtn = document.getElementById('toggleBtn');
+function setTheme(dark) {
+    if (dark) body.classList.add('dark-theme');
+    else body.classList.remove('dark-theme');
+    localStorage.setItem('darkMode', dark ? '1' : '0');
+    if (toggleBtn) toggleBtn.checked = dark;
+}
+if (toggleBtn) {
+    toggleBtn.addEventListener('change', () => setTheme(toggleBtn.checked));
+}
+setTheme(localStorage.getItem('darkMode') === '1');
+
+// Support modal functions
+function openSupportModal() {
+    const modal = document.getElementById('supportModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeSupportModal() {
+    const modal = document.getElementById('supportModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        // Reset form
+        document.getElementById('supportForm').reset();
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('supportModal');
+    if (e.target === modal) {
+        closeSupportModal();
+    }
+});
+
+// Handle form submission
+const supportForm = document.getElementById('supportForm');
+if (supportForm) {
+    supportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('/submit_application', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Application submitted successfully! We\'ll review it and get back to you.');
+                closeSupportModal();
+            } else {
+                alert('❌ ' + (data.message || 'Failed to submit application. Please try again.'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Failed to submit application. Please try again.');
+        });
+    });
+}
+</script>

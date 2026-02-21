@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pending User Approvals</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .page-header {
+            margin-bottom: 30px;
+        }
+        
+        .page-header h1 {
+            color: var(--text);
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .page-header p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .user-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-soft);
+            transition: all 0.3s;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .user-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-soft);
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .user-info h3 {
+            margin: 0;
+            color: var(--text);
+            font-size: 18px;
+        }
+        
+        .user-info p {
+            margin: 2px 0 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text);
+        }
+        
+        .detail-row i {
+            color: var(--muted);
+            width: 16px;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .approve-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .approve-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .reject-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .reject-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            opacity: 0.3;
+            margin-bottom: 20px;
+        }
+        
+        .stats-bar {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-soft);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+        
+        .verified-badge {
+            display: inline-block;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="container">
+    
+    <a href="/dashboard" class="back-link">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+    
+    <div class="page-header">
+        <h1><i class="fa-solid fa-user-clock"></i> Pending User Approvals</h1>
+        <p>Review and approve new user registrations</p>
+    </div>
+    
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">{{ users|length }}</div>
+            <div class="stat-label">Pending Approvals</div>
+        </div>
+    </div>
+    
+    {% if users %}
+    <div class="users-grid">
+        {% for user in users %}
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-avatar">
+                    {{ user.username[0]|upper }}
+                </div>
+                <div class="user-info">
+                    <h3>{{ user.username }}</h3>
+                    <p>@{{ user.handle }}</p>
+                </div>
+            </div>
+            
+            <div class="user-details">
+                <div class="detail-row">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>{{ user.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <i class="fa-solid fa-calendar"></i>
+                    <span>Registered: {{ user.verification_sent_at }}</span>
+                </div>
+                <div class="detail-row">
+                    <i class="fa-solid fa-check-circle"></i>
+                    {% if user.is_verified %}
+                    <span class="verified-badge">✓ Email Verified</span>
+                    {% else %}
+                    <span style="color: #f59e0b;">⏳ Email Not Verified</span>
+                    {% endif %}
+                </div>
+                {% if user.about_me %}
+                <div class="detail-row" style="display: block; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-soft);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <i class="fa-solid fa-user"></i>
+                        <strong>About:</strong>
+                    </div>
+                    <p style="margin: 0; padding-left: 24px; color: var(--text); font-size: 13px; line-height: 1.5; font-style: italic;">{{ user.about_me }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="user-actions">
+                <form method="POST" action="/admin/approve-user/{{ user.id }}" style="flex: 1; margin: 0;">
+                    <button type="submit" class="action-btn approve-btn">
+                        <i class="fa-solid fa-check"></i> Approve
+                    </button>
+                </form>
+                <form method="POST" action="/admin/reject-user/{{ user.id }}" style="flex: 1; margin: 0;" onsubmit="return confirm('Are you sure you want to reject and delete this user?')">
+                    <button type="submit" class="action-btn reject-btn">
+                        <i class="fa-solid fa-times"></i> Reject
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div><i class="fa-solid fa-user-check"></i></div>
+        <h3>No Pending Approvals</h3>
+        <p>All registered users have been reviewed!</p>
+    </div>
+    {% endif %}
+    
+</div>
+
+</body>
+</html>

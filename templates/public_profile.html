@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ user.username }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        .profile-actions{
+            margin-top:12px;
+            display:flex;
+            gap:10px;
+        }
+
+        .profile-actions a,
+        .profile-actions button{
+            padding:8px 16px;
+            border-radius:10px;
+            text-decoration:none;
+            border:1px solid var(--border);
+            cursor:pointer;
+            font-weight:500;
+            font-size:14px;
+            background:#fff;
+            color:var(--text);
+            box-shadow:var(--shadow-soft);
+            transition:background .2s, box-shadow .2s, border .2s;
+        }
+
+        .message-btn{
+            background:#fff;
+            color:var(--text);
+            border-color:var(--border);
+        }
+
+        .friend-btn{
+            background:#fff;
+            color:var(--text);
+            border-color:var(--border);
+        }
+
+        .pending-btn{
+            background:var(--soft-1);
+            color:var(--muted);
+            border-color:var(--border-soft);
+            cursor:not-allowed;
+        }
+
+        .profile-header h2{
+            margin:0;
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+
+        .verified { color:#4da6ff; }
+
+        .profile-header p{
+            color:var(--muted);
+            margin-top:5px;
+        }
+        
+        .followers-stats-box {
+            transition: all .2s;
+        }
+        
+        .sidebar a {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .notification-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="container">
+
+    <div class="sidebar">
+        <h3>Hi {{ session.username }}</h3>
+        <a href="/forum">Community</a>
+        <a href="/friends">
+            <span>Friends</span>
+            {% if friend_requests_count > 0 %}
+            <span class="notification-badge">{{ friend_requests_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/messages">
+            <span>Messages</span>
+            {% if unread_messages_count > 0 %}
+            <span class="notification-badge">{{ unread_messages_count }}</span>
+            {% endif %}
+        </a>
+        {% if session.user_id == 1 %}
+        <a href="/shop">Shop</a>
+        {% endif %}
+        <a href="/subscription">Subscription</a>
+        <a href="/profile">My Profile</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="feed">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div style="padding:12px 18px;margin-bottom:15px;border-radius:12px;{% if category == 'success' %}background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;{% elif category == 'error' %}background:#fee2e2;color:#991b1b;border:1px solid #fecaca;{% else %}background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if is_restricted %}
+        <div style="padding:20px;text-align:center;background:var(--soft-1);border-radius:12px;margin:20px;border:1px solid var(--border-soft);">
+            <h3 style="margin:0 0 8px 0;color:var(--text);">🔒 This account is private</h3>
+            <p style="margin:0;color:#888;">You need to be friends with {{ user.username }} to view their profile.</p>
+        </div>
+        {% else %}
+
+        <div class="profile-header" style="position:relative;">
+
+            <img src="{{ url_for('static', filename=user.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+
+            <div>
+                <h2>
+                    {{ user.username }} {{ user.id | online_status }}
+                    {% if user.id == 1 %}
+                        <span class="admin-badge">ADMIN</span>
+                    {% elif user.badge and user.badge != 'none' %}
+                        <span class="vip-badge {{ user.badge }}">VIP</span>
+                    {% endif %}
+                    {% if user.verified %}
+                        <span class="verified-badge">&#10003;</span>
+                    {% endif %}
+                </h2>
+                <p style="color:#888;font-size:14px;margin:4px 0 8px 0;">@{{ user.handle or user.username|lower }}</p>
+
+                <p>{{ user.bio or "No bio yet" }}</p>
+
+                {% if user.id != session['user_id'] %}
+                <div class="profile-actions">
+
+                    {% if not friendship %}
+                        <a href="/friend/request/{{ user.id }}" class="friend-btn">
+                            + Add Friend
+                        </a>
+
+                    {% elif friendship['status'] == 'pending' and friendship['user_id'] == session['user_id'] %}
+                        <button class="pending-btn" disabled>
+                            Request Sent
+                        </button>
+
+                    {% elif friendship['status'] == 'pending' and friendship['friend_id'] == session['user_id'] %}
+                        <a href="/friend/requests" class="friend-btn">
+                            View Request
+                        </a>
+
+                    {% else %}
+                        <a href="/messages/{{ user.id }}" class="message-btn">
+                            Message
+                        </a>
+                    {% endif %}
+
+                    {% if user.subscription in ['basic', 'pro', 'premium'] %}
+                        {% if is_following %}
+                        <form action="/unfollow/{{ user.id }}" method="POST" style="display:inline;">
+                            <button type="submit" class="friend-btn" style="background:var(--soft-1);color:var(--muted);border-color:var(--border-soft);">
+                                ✓ Following
+                            </button>
+                        </form>
+                        {% else %}
+                        <form action="/follow/{{ user.id }}" method="POST" style="display:inline;">
+                            <button type="submit" class="friend-btn">
+                                + Follow
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+
+                </div>
+                {% endif %}
+
+            </div>
+            
+            {% if user.subscription in ['basic', 'pro', 'premium'] %}
+            <div style="position:absolute;top:20px;right:20px;">
+                <div class="followers-stats-box" style="display:flex;gap:25px;font-size:14px;padding:12px 20px;background:var(--soft-1);border-radius:14px;border:1px solid var(--border-soft);">
+                    <div style="text-align:center;">
+                        <div style="font-weight:700;color:var(--text);font-size:20px;">{{ follower_count if not user.hide_followers else '••' }}</div>
+                        <div style="color:#888;font-size:12px;margin-top:2px;">Followers</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-weight:700;color:var(--text);font-size:20px;">{{ following_count }}</div>
+                        <div style="color:#888;font-size:12px;margin-top:2px;">Following</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <h3 style="margin-top:15px;">Stories</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:16px;margin-bottom:20px;">
+            {% for story in user_stories %}
+            <div style="cursor:pointer;text-align:center;">
+                <img src="{{ url_for('static', filename=story.image) }}?t={{ range(1, 999999) | random }}" 
+                     style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:12px;border:2.5px solid var(--accent);box-shadow:var(--shadow-soft);"
+                     onclick="viewStory(this, '{{ story.image }}', '{{ user.username }}', '{{ url_for('static', filename=user.avatar or 'avatars/default.png') }}')">
+                <div style="font-size:12px;color:var(--muted);margin-top:6px;">{{ story.created_at }}</div>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:40px 20px;color:var(--muted);grid-column:1/-1;">
+                <i class="fa-solid fa-camera-retro" style="font-size:36px;opacity:0.3;margin-bottom:12px;"></i>
+                <p style="margin:0;">No stories yet</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h3 style="margin-top:15px;">Profile Posts</h3>
+
+        {% for post in profile_posts %}
+        <div class="post-card">
+            <div class="post-header">
+                <img src="{{ url_for('static', filename=post.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+                <div>
+                    <div class="username">
+                        {{ post.username }} {{ post.user_id | online_status }}
+                        {% if post.user_id == 1 %}
+                            <span class="admin-badge">ADMIN</span>
+                        {% elif post.user_badge and post.user_badge != 'none' %}
+                            <span class="vip-badge {{ post.user_badge }}">VIP</span>
+                        {% endif %}
+                    </div>
+                    <div class="timestamp">{{ post.created_at }}</div>
+                </div>
+            </div>
+
+            {% if post.image %}
+                <img src="{{ url_for('static', filename=post.image) }}" class="post-image">
+            {% endif %}
+
+            {% if post.music %}
+            <div class="music-post" style="display:flex;align-items:center;gap:8px;padding:0;margin-top:8px;background:transparent;">
+                <i class="fa-solid fa-music" style="font-size:18px;color:#bbb;"></i>
+                <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                    {% if post.music_title %}
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">{{ post.music_title }}</span>
+                    {% endif %}
+                    <audio controls src="{{ url_for('static', filename=post.music) }}" style="flex:1;background:transparent;height:28px;"></audio>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="post-content">{{ post.content | linkify }}</div>
+        </div>
+        {% endfor %}
+
+        <h3 style="margin-top:15px;">Community Posts</h3>
+
+        {% for post in forum_posts %}
+        <div class="post-card">
+            <div class="post-header">
+                <img src="{{ url_for('static', filename=post.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+                <div>
+                    <div class="username">
+                        {{ post.username }} {{ post.user_id | online_status }}
+                        {% if post.user_id == 1 %}
+                            <span class="admin-badge">ADMIN</span>
+                        {% elif post.user_badge and post.user_badge != 'none' %}
+                            <span class="vip-badge {{ post.user_badge }}">VIP</span>
+                        {% endif %}
+                    </div>
+                    <div class="timestamp">{{ post.created_at }}</div>
+                </div>
+            </div>
+
+            {% if post.image %}
+                <img src="{{ url_for('static', filename=post.image) }}" class="post-image">
+            {% endif %}
+
+            {% if post.music %}
+            <div class="music-post" style="display:flex;align-items:center;gap:8px;padding:0;margin-top:8px;background:transparent;">
+                <i class="fa-solid fa-music" style="font-size:18px;color:#bbb;"></i>
+                <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                    {% if post.music_title %}
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">{{ post.music_title }}</span>
+                    {% endif %}
+                    <audio controls src="{{ url_for('static', filename=post.music) }}" style="flex:1;background:transparent;height:28px;"></audio>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="post-content">{{ post.content | linkify }}</div>
+        </div>
+        {% endfor %}
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<!-- Story Modal -->
+<div id="storyModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+    <div style="width:min(520px,92vw);background:rgba(12,12,12,0.9);border-radius:18px;padding:14px 14px 10px;color:#fff;box-shadow:0 24px 80px rgba(0,0,0,.35);position:relative;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <img id="storyProfilePic" src="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.2);">
+            <span id="storyUsername" style="font-size:14px;font-weight:600;"></span>
+            <button onclick="closeStory()" style="margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.12);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div style="position:relative;border-radius:14px;overflow:hidden;background:#000;">
+            <img id="storyImage" src="" style="width:100%;height:auto;max-height:70vh;object-fit:contain;display:block;">
+        </div>
+    </div>
+</div>
+
+<script>
+function viewStory(element, imagePath, username, avatarPath) {
+    const modal = document.getElementById('storyModal');
+    const img = document.getElementById('storyImage');
+    const profilePic = document.getElementById('storyProfilePic');
+    const userLabel = document.getElementById('storyUsername');
+    
+    if (modal && img) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // Handle image path
+        let imgSrc = imagePath;
+        if (!imgSrc.startsWith('/') && !imgSrc.startsWith('http')) {
+            imgSrc = "{{ url_for('static', filename='') }}" + imgSrc;
+        }
+        img.src = imgSrc;
+        
+        // Handle avatar path  
+        let avatarSrc = avatarPath;
+        if (!avatarSrc.startsWith('/') && !avatarSrc.startsWith('http')) {
+            avatarSrc = "{{ url_for('static', filename='') }}" + avatarSrc;
+        }
+        profilePic.src = avatarSrc;
+        
+        userLabel.textContent = username;
+    }
+}
+
+function closeStory() {
+    const modal = document.getElementById('storyModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('storyModal');
+    if (e.target === modal) {
+        closeStory();
+    }
+});
+</script>
+
+</body>
+</html>

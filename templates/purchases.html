@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Purchases</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.container { display:flex; }
+.sidebar { width: 230px; background: var(--card); border-radius: var(--radius); padding:20px; box-shadow: var(--shadow-soft); }
+.feed { flex:1; padding:30px; }
+.purchase-item {
+    background: var(--card);
+    padding: 20px;
+    border-radius: var(--radius);
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-soft);
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+.purchase-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: var(--soft-1);
+    flex-shrink: 0;
+}
+.purchase-info {
+    flex: 1;
+}
+.purchase-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 8px;
+}
+.purchase-meta {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 4px 0;
+}
+.purchase-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 8px 0;
+}
+.download-btn {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-border);
+    padding: 10px 22px;
+    border-radius: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    text-decoration: none;
+    box-shadow: var(--shadow-soft);
+    transition: background .2s, box-shadow .2s, transform .15s;
+}
+.download-btn:hover {
+    background: var(--soft-1);
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+}
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+}
+.alert {
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.product-images {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.product-images img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+/* Notification badge */
+.notification-badge {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    display: inline-block;
+}
+.sidebar a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="container">
+    <div class="sidebar">
+        <h3>Hi {{ session.get('username','User') }}</h3>
+        <a href="/forum">Community</a>
+        {% if session.user_id == 1 %}
+        <a href="/shop">Shop</a>
+        <a href="/cart">Cart</a>
+        <a href="/purchases">My Purchases</a>
+        {% endif %}
+        <a href="/friends">
+            <span>Friends</span>
+            {% if friend_requests_count > 0 %}
+            <span class="notification-badge">{{ friend_requests_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/messages">
+            <span>Messages</span>
+            {% if unread_messages_count > 0 %}
+            <span class="notification-badge">{{ unread_messages_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/profile">Profile</a>
+        <a href="/photos">Photos</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/subscription">Subscription</a>
+    </div>
+    
+    <div class="feed">
+        <h2>My Purchases</h2>
+        
+        {% if request.args.get('success') == '1' %}
+        <div class="alert" style="background:#10b981;color:white;">
+            Purchase successful! Your items are ready to download below.
+        </div>
+        {% endif %}
+        
+        {% if products %}
+            {% for product in products %}
+            <div class="purchase-item">
+                {% if product.images %}
+                    {% set imgs = product.images.split(',') if product.images else [] %}
+                    {% if imgs and imgs[0] %}
+                    <img src="{{ url_for('static', filename=imgs[0]) }}" class="purchase-image">
+                    {% else %}
+                    <div class="purchase-image"></div>
+                    {% endif %}
+                {% else %}
+                    <div class="purchase-image"></div>
+                {% endif %}
+                
+                <div class="purchase-info">
+                    <h3 class="purchase-title">{{ product.name }}</h3>
+                    <p class="purchase-meta">
+                        <i class="fa-solid fa-user"></i> Sold by {{ product.seller_username }}
+                    </p>
+                    <p class="purchase-meta">
+                        <i class="fa-solid fa-calendar"></i> Purchased on {{ product.purchased_at }}
+                    </p>
+                    {% if product.description %}
+                    <p style="color:var(--muted);font-size:14px;margin:8px 0;">{{ product.description }}</p>
+                    {% endif %}
+                    <div class="purchase-price">${{ "%.2f"|format(product.price or 0) }}</div>
+                    
+                    {% if product.file %}
+                    {% set file_ext = product.file.split('.')[-1].lower() %}
+                    <a href="{{ url_for('static', filename=product.file) }}" download class="download-btn">
+                        {% if file_ext in ['zip', 'rar', '7z'] %}
+                        <i class="fa-solid fa-file-zipper"></i>
+                        {% elif file_ext in ['pdf'] %}
+                        <i class="fa-solid fa-file-pdf"></i>
+                        {% elif file_ext in ['exe', 'apk'] %}
+                        <i class="fa-solid fa-file-code"></i>
+                        {% elif file_ext in ['py', 'js'] %}
+                        <i class="fa-solid fa-code"></i>
+                        {% elif file_ext in ['docx', 'pptx'] %}
+                        <i class="fa-solid fa-file-word"></i>
+                        {% else %}
+                        <i class="fa-solid fa-download"></i>
+                        {% endif %}
+                        Download Product File ({{ file_ext.upper() }})
+                    </a>
+                    <div style="margin-top:6px;font-size:12px;color:var(--muted);">
+                        <i class="fa-solid fa-file"></i> {{ product.file.split('/')[-1] }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.images %}
+                        {% set imgs = product.images.split(',') if product.images else [] %}
+                        {% if imgs %}
+                        <div style="margin-top:12px;font-size:13px;color:var(--text);font-weight:600;">Product Images:</div>
+                        <div class="product-images">
+                            {% for img in imgs[:5] %}
+                            <a href="{{ url_for('static', filename=img) }}" download>
+                                <img src="{{ url_for('static', filename=img) }}" title="Click to download">
+                            </a>
+                            {% endfor %}
+                        </div>
+                        <div style="margin-top:6px;font-size:12px;color:var(--muted);">Click images to download</div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-box-open"></i>
+                <div style="font-size:18px;margin-bottom:8px;">No purchases yet</div>
+                <div style="font-size:14px;">Visit the shop to browse products</div>
+                <a href="/shop" class="download-btn" style="margin-top:20px;">
+                    <i class="fa-solid fa-shop"></i> Browse Shop
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>

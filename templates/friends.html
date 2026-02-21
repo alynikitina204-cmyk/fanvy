@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Friends</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 30px;
+}
+
+.page {
+    max-width: 1100px;
+    margin: auto;
+}
+
+.top-nav {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.top-nav a {
+    padding: 10px 18px;
+    border-radius: 14px;
+    background: var(--card);
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+    box-shadow: 0 3px 10px rgba(0,0,0,.06);
+    transition: background .2s;
+}
+
+.top-nav a:hover { background: var(--soft-1); }
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.header h2 {
+    margin: 0;
+    color: var(--accent);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.panel {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.07);
+}
+
+.section-title {
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: var(--accent);
+}
+
+.friend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: var(--soft-1);
+    transition: .2s;
+}
+
+.friend-card:hover {
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(0,0,0,.07);
+}
+
+.friend-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.friend-info img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.friend-info a {
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.verified { color: #1da1f2; }
+
+.btn {
+    padding: 7px 14px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    color: white;
+    transition: filter .2s, transform .15s;
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.remove {
+    background: var(--soft-gradient);
+}
+
+.accept {
+    background: var(--primary-gradient);
+}
+
+.empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 15px;
+}
+</style>
+</head>
+
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="page">
+
+    <div class="top-nav">
+        <a href="/forum">Community</a>
+        <a href="/profile">Profile</a>
+    </div>
+
+    <div class="header">
+        <h2>Your Friends</h2>
+    </div>
+
+    <div class="grid">
+
+        <!-- FRIENDS -->
+        <div class="panel">
+            <div class="section-title">Friends</div>
+
+            <div class="friend-list">
+            {% if friends %}
+                {% for friend in friends %}
+                <div class="friend-card">
+
+                    <div class="friend-info">
+                        <img src="{{ url_for('static', filename=friend.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+                        {{ friend.id | online_status }}<a href="{{ url_for('view_user_profile', user_id=friend.id) }}">
+                            {{ friend.username }}
+                            {% if friend.id == 1 %}
+                                <span class="admin-badge">ADMIN</span>
+                            {% elif friend.badge and friend.badge != 'none' %}
+                                <span class="vip-badge {{ friend.badge }}">VIP</span>
+                            {% endif %}
+                        </a>
+                        {% if friend.verified %}
+                            <span class="verified-badge">&#10003;</span>
+                        {% endif %}
+                    </div>
+
+                    <a href="{{ url_for('remove_friend', user_id=friend.id) }}" class="btn remove">
+                        Remove
+                    </a>
+
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty">No friends yet</div>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- PENDING -->
+        <div class="panel">
+            <div class="section-title">Requests</div>
+
+            <div class="friend-list">
+            {% if pending_requests %}
+                {% for req in pending_requests %}
+                <div class="friend-card">
+
+                    <div class="friend-info">
+                        <img src="{{ url_for('static', filename=req.avatar or 'avatars/default.png') }}?t={{ range(1, 999999) | random }}">
+                        {{ req.user_id | online_status }}<a href="{{ url_for('view_user_profile', user_id=req.user_id) }}">
+                            {{ req.username }}
+                            {% if req.user_id == 1 %}
+                                <span class="admin-badge">ADMIN</span>
+                            {% elif req.badge and req.badge != 'none' %}
+                                <span class="vip-badge {{ req.badge }}">VIP</span>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <a href="{{ url_for('accept_friend', req_id=req.id) }}" class="btn accept">
+                        Accept
+                    </a>
+
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty">No pending requests</div>
+            {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

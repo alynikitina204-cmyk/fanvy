@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Your Cart</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.container { display:flex; }
+.sidebar { width: 230px; background: var(--card); border-radius: var(--radius); padding:20px; box-shadow: var(--shadow-soft); }
+.feed { flex:1; padding:30px; }
+.cart-item { display:flex; gap:20px; background: var(--card); padding:16px; border-radius: var(--radius); margin-bottom:20px; }
+.cart-item img { width:80px; height:80px; object-fit:cover; border-radius:8px; }
+.cart-info { flex:1; }
+.remove-cart { background:var(--soft-gradient); border:none; padding:6px 12px; border-radius:12px; cursor:pointer; }
+.cart-total { background:var(--card); padding:20px; border-radius:var(--radius); margin-top:20px; }
+.checkout-btn { background:var(--button-bg); color:var(--button-text); border:1px solid var(--button-border); padding:14px 24px; border-radius:18px; font-weight:600; cursor:pointer; width:100%; margin-top:12px; font-size:16px; display:flex; align-items:center; justify-content:center; gap:10px; }
+.checkout-btn:hover { background:var(--soft-1); transform:translateY(-1px); }
+.alert { padding:14px; border-radius:12px; margin-bottom:20px; text-align:center; }
+
+/* Notification badge */
+.notification-badge {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    display: inline-block;
+}
+.sidebar a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+<div class="container">
+  <div class="sidebar">
+    <h3>Hi {{ session.get('username','User') }}</h3>
+    <a href="/forum">Community</a>
+    {% if session.user_id == 1 %}
+    <a href="/shop">Shop</a>
+    <a href="/cart">Cart</a>
+    <a href="/purchases">My Purchases</a>
+    {% endif %}
+    <a href="/friends">
+        <span>Friends</span>
+        {% if friend_requests_count > 0 %}
+        <span class="notification-badge">{{ friend_requests_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/messages">
+        <span>Messages</span>
+        {% if unread_messages_count > 0 %}
+        <span class="notification-badge">{{ unread_messages_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/profile">Profile</a>
+    <a href="/photos">Photos</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/subscription">Subscription</a>
+  </div>
+  <div class="feed">
+    <h2>Your Cart</h2>
+    
+    {% if request.args.get('error') == 'insufficient' %}
+    <div class="alert" style="background:#ef4444;color:white;">
+        Insufficient wallet balance. <a href="/wallet" style="color:white;text-decoration:underline;">Add funds</a>
+    </div>
+    {% endif %}
+
+    {% if request.args.get('success') == '1' %}
+    <div class="alert" style="background:#10b981;color:white;">
+        Purchase successful! Your items have been ordered.
+    </div>
+    {% endif %}
+    
+    {% if products %}
+      {% for p in products %}
+      <div class="cart-item">
+        {% if p.image %}<img src="{{ url_for('static', filename=p.image) }}">{% endif %}
+        <div class="cart-info">
+          <strong>{{ p.name }}</strong><br>
+          ${{ '{:.2f}'.format(p.price or 0) }}<br>
+          by {{ p.username }}
+        </div>
+        <form action="/cart/remove/{{ p.id }}">
+          <button class="remove-cart">Remove</button>
+        </form>
+      </div>
+      {% endfor %}
+      
+      <div class="cart-total">
+        <div style="display:flex;justify-content:space-between;font-size:20px;font-weight:700;">
+          <span>Total</span>
+          <span>${{ '{:.2f}'.format(products|sum(attribute='price')) }}</span>
+        </div>
+        <form method="post" action="/cart/checkout">
+          <button type="submit" class="checkout-btn">
+            <i class="fa-solid fa-wallet"></i> Checkout with Wallet
+          </button>
+        </form>
+      </div>
+    {% else %}
+      <p>Your cart is empty.</p>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

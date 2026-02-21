@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin - User Approvals</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 30px;
+    margin: 0;
+}
+
+.page {
+    max-width: 1200px;
+    margin: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    margin: 0;
+    color: var(--accent);
+}
+
+.back-btn {
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: var(--card);
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+    border: 1px solid var(--border-soft);
+}
+
+.back-btn:hover {
+    background: var(--soft-1);
+}
+
+.section {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-soft);
+}
+
+.section h2 {
+    margin: 0 0 20px;
+    color: var(--accent);
+    font-size: 20px;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-table th {
+    text-align: left;
+    padding: 12px;
+    background: var(--soft-1);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+}
+
+.user-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.user-table tr:hover {
+    background: var(--soft-1);
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-verified {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-unverified {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-approved {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: transform .2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-approve {
+    background: #10b981;
+    color: white;
+}
+
+.btn-reject {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+</style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+<div class="page">
+    <div class="header">
+        <h1>👥 User Approvals</h1>
+        <a href="/forum" class="back-btn">← Back to Forum</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Pending Approvals -->
+    <div class="section">
+        <h2>⏳ Pending Approvals ({{ pending|length }})</h2>
+        
+        {% if pending %}
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Registered</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in pending %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td><strong>{{ user.username }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.created_at }}</td>
+                    <td>
+                        {% if user.is_verified %}
+                        <span class="badge badge-verified">✓ Verified</span>
+                        {% else %}
+                        <span class="badge badge-unverified">⚠ Not Verified</span>
+                        {% endif %}
+                        <span class="badge badge-pending">Pending Approval</span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <form method="POST" action="/admin/approve_user/{{ user.id }}" style="display:inline;">
+                                <button type="submit" class="btn btn-approve btn-small">✓ Approve</button>
+                            </form>
+                            <form method="POST" action="/admin/reject_user/{{ user.id }}" style="display:inline;" onsubmit="return confirm('Reject this user?')">
+                                <button type="submit" class="btn btn-reject btn-small">✗ Reject</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            ✅ No pending approvals
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- All Users -->
+    <div class="section">
+        <h2>👤 All Users ({{ all_users|length }})</h2>
+        
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Subscription</th>
+                    <th>Status</th>
+                    <th>Registered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in all_users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>
+                        <strong>{{ user.username }}</strong>
+                        {% if user.id == 1 %}
+                        <span class="admin-badge" style="font-size:10px;margin-left:4px;">ADMIN</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <span style="text-transform:capitalize;font-weight:500;">
+                            {{ user.subscription or 'none' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.is_verified %}
+                        <span class="badge badge-verified">✓ Verified</span>
+                        {% else %}
+                        <span class="badge badge-unverified">⚠ Unverified</span>
+                        {% endif %}
+                        
+                        {% if user.is_approved %}
+                        <span class="badge badge-approved">✓ Approved</span>
+                        {% else %}
+                        <span class="badge badge-pending">⏳ Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>

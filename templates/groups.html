@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Groups</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #f2f2f2;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: white;
+            height: 100vh;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+        }
+
+        .sidebar a {
+            display: block;
+            margin: 10px 0;
+            text-decoration: none;
+            color: #333;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .sidebar a:hover {
+            background: #f0f0f0;
+        }
+
+        /* Main */
+        .main {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .groups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .group-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            transition: 0.2s;
+        }
+
+        .group-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .group-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .group-desc {
+            font-size: 14px;
+            color: gray;
+            margin-bottom: 12px;
+        }
+
+        .group-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 10px;
+            background: #FFB6C1;
+            color: white;
+            cursor: pointer;
+        }
+
+        .group-btn:hover {
+            background: #e599b7;
+        }
+
+        .create-btn {
+            margin-bottom: 20px;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 10px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        .create-btn:hover {
+            background: #45a049;
+        }
+        
+        /* Notification badge */
+        .notification-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+        .sidebar a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+{% include '_theme_toggle.html' %}
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Menu</h2>
+        <a href="/forum">Forum</a>
+        {% if session.user_id == 1 %}
+        <a href="/shop">Shop</a>
+        {% endif %}
+        <a href="/subscription">Subscription</a>
+        <a href="/messages">
+            <span>Messages</span>
+            {% if unread_messages_count > 0 %}
+            <span class="notification-badge">{{ unread_messages_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+
+    <button class="create-btn" onclick="window.location.href='/groups/create'">
+        + Create New Group
+    </button>
+
+    <!-- YOUR GROUPS -->
+    <div class="groups-section">
+        <div class="section-title">Your Groups</div>
+
+        {% if user_groups %}
+        <div class="groups-grid">
+            {% for group in user_groups %}
+            <div class="group-card">
+                <div class="group-name">{{ group.name }}</div>
+                <div class="group-desc">{{ group.description }}</div>
+                <button class="group-btn"
+                        onclick="window.location.href='/groups/{{ group.id }}/leave'">
+                    Leave
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-text">You haven’t joined any groups yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="section-divider"></div>
+
+    <!-- ALL GROUPS -->
+    <div class="groups-section">
+        <div class="section-title">Explore Groups</div>
+
+        <div class="groups-grid">
+            {% for group in all_groups %}
+            <div class="group-card">
+                <div class="group-name">{{ group.name }}</div>
+                <div class="group-desc">{{ group.description }}</div>
+                <button class="group-btn"
+                        onclick="window.location.href='/groups/{{ group.id }}/join'">
+                    Join
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
