@@ -290,6 +290,16 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def get_current_user():
+    """Get current logged-in user from database. Returns None if not found."""
+    if 'user_id' not in session:
+        return None
+    
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id=?", (session['user_id'],)).fetchone()
+    conn.close()
+    return user
+
 def get_subscription(conn, user_id):
     row = conn.execute(
         "SELECT subscription FROM users WHERE id=?",
