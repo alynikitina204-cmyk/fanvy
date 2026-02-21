@@ -580,7 +580,29 @@ def create_tables():
     conn.commit()
     conn.close()
 
-create_tables()
+# Initialize database with error handling
+try:
+    create_tables()
+    print("✅ Database tables created successfully")
+except Exception as e:
+    print(f"❌ Error creating database tables: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Error handlers
+@app.errorhandler(500)
+def internal_error(error):
+    import traceback
+    error_details = traceback.format_exc()
+    print(f"❌ Internal Server Error: {error_details}")
+    return f"<h1>Internal Server Error</h1><pre>{error_details}</pre>", 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    error_details = traceback.format_exc()
+    print(f"❌ Unhandled Exception: {error_details}")
+    return f"<h1>Error</h1><pre>{error_details}</pre>", 500
 
 # -----------------------
 # Auth
@@ -3096,4 +3118,5 @@ def api_check_user_online(user_id):
 # -----------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug_mode = os.environ.get("FLASK_ENV") != "production"
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
