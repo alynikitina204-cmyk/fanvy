@@ -615,8 +615,8 @@ def register():
             import random
             verification_code = str(random.randint(100000, 999999))
             
-            # New users require admin approval (is_approved=0 by default)
-            is_approved = 0
+            # First user is auto-approved as admin, others need approval
+            is_approved = 1 if user_count == 0 else 0
             
             try:
                 conn.execute("""
