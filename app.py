@@ -1036,6 +1036,13 @@ def forum():
 
     user = conn.execute("SELECT * FROM users WHERE id=?",
                         (session["user_id"],)).fetchone()
+    
+    # If user not found (database was recreated), clear session and redirect to login
+    if not user:
+        conn.close()
+        session.clear()
+        flash("Please login again.", "info")
+        return redirect("/login")
 
     if request.method == "POST":
         content = request.form.get("content","").strip()
@@ -2886,6 +2893,13 @@ def watch_together():
     conn = get_db_connection()
     user = conn.execute("SELECT * FROM users WHERE id=?", (session['user_id'],)).fetchone()
     
+    # If user not found (database was recreated), clear session and redirect to login
+    if not user:
+        conn.close()
+        session.clear()
+        flash("Please login again.", "info")
+        return redirect("/login")
+    
     # Get all active watch rooms - public rooms visible to all, private rooms only to host/participants
     rooms = conn.execute("""
         SELECT wr.*, u.username as host_name, u.avatar as host_avatar,
@@ -2984,6 +2998,12 @@ def watch_room(room_id):
     """, (room_id,)).fetchall()
     
     user = conn.execute("SELECT * FROM users WHERE id=?", (session['user_id'],)).fetchone()
+    
+    # If user not found (database was recreated), clear session and redirect to login
+    if not user:
+        conn.close()
+        session.clear()
+        return redirect("/login")
     
     conn.close()
     
