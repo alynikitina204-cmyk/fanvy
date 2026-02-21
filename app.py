@@ -3,7 +3,7 @@ from markupsafe import Markup
 import sqlite3, os, uuid, re
 from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
-import storage  # Supabase Storage integration
+import storage  # Storage integration (Supabase or local)
 import email_service  # Email sending service
 
 app = Flask(__name__)

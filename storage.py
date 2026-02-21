@@ -7,30 +7,46 @@ import os
 from werkzeug.utils import secure_filename
 import time
 
-# Try to import Supabase
+# Try to import Supabase and config
 try:
     from supabase import create_client, Client
+    SUPABASE_LIB_AVAILABLE = True
+except ImportError:
+    SUPABASE_LIB_AVAILABLE = False
+    print("⚠️  Supabase library not installed - using local storage only")
+
+try:
     import config
-    
-    # Check if Supabase is configured
-    SUPABASE_ENABLED = (
-        hasattr(config, 'SUPABASE_URL') and 
-        hasattr(config, 'SUPABASE_KEY') and
-        config.SUPABASE_URL != "YOUR_SUPABASE_URL" and
-        config.SUPABASE_KEY != "YOUR_SUPABASE_ANON_KEY"
-    )
-    
-    if SUPABASE_ENABLED:
-        supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
-        print("✅ Supabase Storage enabled")
-    else:
-        supabase = None
-        print("⚠️  Supabase not configured - using local storage")
+except ImportError:
+    print("⚠️  config.py not found - using local storage only")
+    # Create mock config
+    class MockConfig:
+        SUPABASE_URL = "YOUR_SUPABASE_URL"
+        SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
+    config = MockConfig()
+
+# Check if Supabase is configured
+SUPABASE_ENABLED = False
+supabase = None
+
+if SUPABASE_LIB_AVAILABLE:
+    try:
+        SUPABASE_ENABLED = (
+            hasattr(config, 'SUPABASE_URL') and 
+            hasattr(config, 'SUPABASE_KEY') and
+            config.SUPABASE_URL != "YOUR_SUPABASE_URL" and
+            config.SUPABASE_KEY != "YOUR_SUPABASE_ANON_KEY"
+        )
         
-except Exception as e:
-    SUPABASE_ENABLED = False
-    supabase = None
-    print(f"⚠️  Supabase not available - using local storage: {e}")
+        if SUPABASE_ENABLED:
+            supabase = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
+            print("✅ Supabase Storage enabled")
+        else:
+            print("⚠️  Supabase not configured - using local storage")
+    except Exception as e:
+        SUPABASE_ENABLED = False
+        supabase = None
+        print(f"⚠️  Supabase initialization error - using local storage: {e}")
 
 def upload_file(file, bucket_name, folder="", local_folder="static"):
     """
