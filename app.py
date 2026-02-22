@@ -6,14 +6,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
 # import storage  # Storage integration (Supabase or local) - DISABLED: causes Python 3.14 incompatibility
 import email_service  # Email sending service
-# import db_schema  # Database schema - disabled, using SQLite only
+import db_schema  # Database schema for both SQLite and PostgreSQL
 
 # Database imports - support both SQLite (local) and PostgreSQL (production)
 DATABASE_URL = os.environ.get("DATABASE_URL")
-# PostgreSQL disabled due to Python 3.14 compatibility issues with psycopg2
-# Will use SQLite for now (data persists in database file)
-USE_POSTGRES = False
-print("💿 Using SQLite mode (PostgreSQL temporarily disabled for Python 3.14 compatibility)")
+if DATABASE_URL:
+    import psycopg2
+    import psycopg2.extras
+    USE_POSTGRES = True
+    print(f"🐘 PostgreSQL mode - connecting to database")
+else:
+    USE_POSTGRES = False
+    print("💿 SQLite mode (no DATABASE_URL found)")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
@@ -324,14 +328,33 @@ def allowed_file(filename):
 
 
 def get_db_connection():
-    """Get SQLite database connection"""
-    conn = sqlite3.connect("users.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Get database connection - PostgreSQL (production) or SQLite (local)"""
+    if USE_POSTGRES:
+        try:
+            conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+            return conn
+        except Exception as e:
+            print(f"⚠️  PostgreSQL connection failed: {e}")
+            print("⚠️  Falling back to SQLite")
+            conn = sqlite3.connect("users.db")
+            conn.row_factory = sqlite3.Row
+            return conn
+    else:
+        conn = sqlite3.connect("users.db")
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def execute_query(conn, query, params=()):
-    """Execute query on SQLite database"""
-    return conn.execute(query, params)
+    """Execute query with proper cursor handling for both databases"""
+    if USE_POSTGRES:
+        # PostgreSQL uses %s placeholders, convert ? to %s
+        query = query.replace("?", "%s")
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        return cursor
+    else:
+        # SQLite uses ? placeholders (default)
+        return conn.execute(query, params)
 
 def get_current_user():
     """Get current logged-in user from database. Returns None if not found."""
@@ -356,7 +379,32 @@ def get_subscription(conn, user_id):
 def create_tables():
     conn = get_db_connection()
     
-    # SQLite only (PostgreSQL disabled)
+    # PostgreSQL: Use simplified schema
+    if USE_POSTGRES:
+        print("🐘 Creating PostgreSQL tables...")
+        try:
+            cursor = conn.cursor()
+            # Create all tables from schema
+            for table_name, create_sql in db_schema.TABLES.items():
+                print(f"Creating table: {table_name}")
+                cursor.execute(create_sql)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print("✅ PostgreSQL tables created successfully")
+            return
+        except Exception as e:
+            print(f"⚠️  PostgreSQL table creation error: {e}")
+            import traceback
+            traceback.print_exc()
+            print("⚠️  Continuing with SQLite fallback...")
+            try:
+                conn.rollback()
+                conn.close()
+            except:
+                pass
+    
+    # SQLite: Use existing logic with validation
     # Only recreate database if schema is actually outdated
     schema_valid = True
     if os.path.exists("users.db"):
