@@ -10,12 +10,16 @@ import db_schema  # Database schema for both SQLite and PostgreSQL
 
 # Database imports - support both SQLite (local) and PostgreSQL (production)
 DATABASE_URL = os.environ.get("DATABASE_URL")
+print(f"🔍 DATABASE_URL detected: {bool(DATABASE_URL)}")
 if DATABASE_URL:
+    print(f"🔍 DATABASE_URL value: {DATABASE_URL[:20]}...")  # Show first 20 chars for debugging
     import psycopg2
     import psycopg2.extras
     USE_POSTGRES = True
+    print("🐘 PostgreSQL mode enabled")
 else:
     USE_POSTGRES = False
+    print("💿 SQLite mode (no DATABASE_URL found)")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
