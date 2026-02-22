@@ -4,7 +4,7 @@ import sqlite3, os, uuid, re
 from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
-import storage  # Storage integration (Supabase or local)
+# import storage  # Storage integration (Supabase or local) - DISABLED: causes Python 3.14 incompatibility
 import email_service  # Email sending service
 import db_schema  # Database schema for both SQLite and PostgreSQL
 
@@ -34,13 +34,38 @@ ADMIN_EMAIL = "ho.swag@mail.ru"
 # Jinja filter for file URLs (Supabase or local)
 @app.template_filter('file_url')
 def file_url_filter(path):
-    """Convert file path to proper URL (Supabase or local static/)"""
+    """Convert file path to proper URL (just return path as-is for local static/)"""
     if not path:
         return None
-    return storage.get_file_url(path)
+    # Assume path is already in /static/... format
+    return path if path.startswith('/') else f'/static/{path}'
 
 # Register the filter
 app.jinja_env.filters['file_url'] = file_url_filter
+
+# -----------------------
+# Local File Upload Helper
+# -----------------------
+def save_upload_file(file, folder_name):
+    """Save uploaded file to local static folder"""
+    if not file or not file.filename:
+        return None
+    
+    import os
+    from werkzeug.utils import secure_filename
+    
+    filename = secure_filename(file.filename)
+    # Add timestamp to avoid collisions
+    filename = f"{uuid.uuid4().hex}_{filename}"
+    
+    folder_path = os.path.join("static", folder_name)
+    os.makedirs(folder_path, exist_ok=True)
+    
+    filepath = os.path.join(folder_path, filename)
+    file.save(filepath)
+    
+    # Return relative path for URL
+    return f"{folder_name}/{filename}"
 
 # -----------------------
 # Notification Counts Context Processor
@@ -1178,12 +1203,12 @@ def forum():
         music_title = None
         
         if image and image.filename and allowed_file(image.filename):
-            filename = storage.upload_post_image(image)
+            filename = save_upload_file(image, 'uploads')
 
         if music and music.filename and allowed_file(music.filename):
             # Store the original filename
             music_title = music.filename
-            music_name = storage.upload_music_file(music)
+            music_name = save_upload_file(music, 'music')
 
         if content or filename or music_name:
             conn.execute("""
@@ -1269,7 +1294,7 @@ def add_story():
     if not image or not allowed_file(image.filename):
         return redirect(next_url)
 
-    filename = storage.upload_story(image)
+    filename = save_upload_file(image, 'stories')
     if not filename:
         return redirect(next_url)
 
@@ -1356,7 +1381,7 @@ def add_album_image():
     if not image or not allowed_file(image.filename):
         return redirect("/profile")
 
-    image_path = storage.upload_photo(image)
+    image_path = save_upload_file(image, 'uploads')
     if not image_path:
         return redirect("/profile")
 
@@ -1439,12 +1464,12 @@ def shop():
 
         # save main file if present
         if main_file and main_file.filename and allowed_file(main_file.filename):
-            file_path = storage.upload_file(main_file, "products")
+            file_path = save_upload_file(main_file, 'products')
 
         # save up to 5 images
         for img in images[:5]:
             if img and img.filename and allowed_file(img.filename):
-                uploaded_path = storage.upload_file(img, "products")
+                uploaded_path = save_upload_file(img, 'products')
                 if uploaded_path:
                     image_paths.append(uploaded_path)
 
@@ -1916,7 +1941,7 @@ def profile():
 
         file = request.files.get("avatar")
         if file and file.filename and allowed_file(file.filename):
-            avatar = storage.upload_avatar(file)
+            avatar = save_upload_file(file, 'avatars')
 
         conn.execute("""
             UPDATE users
@@ -2086,12 +2111,12 @@ def add_profile_post():
     music_title = None
 
     if image and image.filename and allowed_file(image.filename):
-        image_name = storage.upload_post_image(image)
+        image_name = save_upload_file(image, 'uploads')
 
     if music and music.filename and allowed_file(music.filename):
         # Store the original filename (with extension)
         music_title = music.filename
-        music_name = storage.upload_music_file(music)
+        music_name = save_upload_file(music, 'music')
 
     if content or image_name or music_name:
         conn = get_db_connection()
@@ -2711,9 +2736,9 @@ def upload_message_file():
         return {"error": "Invalid file"}, 400
     
     if file_type == "music":
-        filepath = storage.upload_music_file(file)
+        filepath = save_upload_file(file, 'music')
     else:  # image
-        filepath = storage.upload_post_image(file)
+        filepath = save_upload_file(file, 'uploads')
     
     if not filepath:
         return {"error": "Upload failed"}, 500
