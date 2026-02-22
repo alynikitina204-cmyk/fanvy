@@ -5,7 +5,7 @@ from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 # from flask_socketio import SocketIO, emit, join_room  # Disabled for deployment
 # import storage  # Storage integration (Supabase or local) - DISABLED: causes Python 3.14 incompatibility
-import email_service  # Email sending service
+# import email_service  # Email sending service - DISABLED: requires email_config.py
 import db_schema  # Database schema for both SQLite and PostgreSQL
 
 # Database imports - support both SQLite (local) and PostgreSQL (production)
@@ -875,7 +875,8 @@ def register():
                 conn.commit()
                 
                 # Send verification email
-                email_sent = email_service.send_verification_email(email, username, verification_code)
+                # email_service disabled - verification code will be shown on screen
+                email_sent = False
                 
                 # Store email in session for verification step
                 session["pending_verification_email"] = email
