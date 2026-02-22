@@ -352,17 +352,23 @@ def create_tables():
             cursor = conn.cursor()
             # Create all tables from schema
             for table_name, create_sql in db_schema.TABLES.items():
+                print(f"Creating table: {table_name}")
                 cursor.execute(create_sql)
             conn.commit()
-            # Give first user admin privileges and balance
-            cursor.execute("UPDATE users SET wallet_balance=1000.0, is_verified=true, is_approved=true WHERE id=1")
-            conn.commit()
             cursor.close()
+            conn.close()
             print("✅ PostgreSQL tables created successfully")
             return
         except Exception as e:
             print(f"⚠️  PostgreSQL table creation error: {e}")
-            conn.rollback()
+            import traceback
+            traceback.print_exc()
+            try:
+                conn.rollback()
+                conn.close()
+            except:
+                pass
+            raise  # Re-raise the exception to stop execution
     
     # SQLite: Use existing logic with validation
     # Only recreate database if schema is actually outdated
