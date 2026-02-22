@@ -303,8 +303,16 @@ def allowed_file(filename):
 def get_db_connection():
     """Get database connection - PostgreSQL (production) or SQLite (local)"""
     if USE_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        return conn
+        try:
+            conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+            return conn
+        except Exception as e:
+            print(f"⚠️  PostgreSQL connection failed: {e}")
+            print("⚠️  Falling back to SQLite")
+            # Fall back to SQLite if PostgreSQL fails
+            conn = sqlite3.connect("users.db")
+            conn.row_factory = sqlite3.Row
+            return conn
     else:
         conn = sqlite3.connect("users.db")
         conn.row_factory = sqlite3.Row
@@ -363,12 +371,13 @@ def create_tables():
             print(f"⚠️  PostgreSQL table creation error: {e}")
             import traceback
             traceback.print_exc()
+            print("⚠️  Continuing with SQLite fallback...")
             try:
                 conn.rollback()
                 conn.close()
             except:
                 pass
-            raise  # Re-raise the exception to stop execution
+            # Don't raise, fall through to SQLite code below
     
     # SQLite: Use existing logic with validation
     # Only recreate database if schema is actually outdated
