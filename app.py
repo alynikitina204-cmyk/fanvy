@@ -571,6 +571,10 @@ def create_tables():
     except sqlite3.OperationalError:
         pass
     try:
+        conn.execute("ALTER TABLE posts ADD COLUMN tags TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
         conn.execute("ALTER TABLE profile_posts ADD COLUMN music TEXT")
     except sqlite3.OperationalError:
         pass
