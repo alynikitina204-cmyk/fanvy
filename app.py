@@ -8,12 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # import email_service  # Email sending service - DISABLED: requires email_config.py
 # import db_schema  # Database schema - disabled, using SQLite only
 
-# Database imports - support both SQLite (local) and PostgreSQL (production)
-DATABASE_URL = os.environ.get("DATABASE_URL")
-# PostgreSQL disabled - Python 3.14 on Render doesn't support psycopg2
-# Using SQLite instead (data persists in database file on Render disk)
-USE_POSTGRES = False
-print("💿 Using SQLite mode (PostgreSQL disabled for Python 3.14 compatibility)")
+# Database: Using SQLite (data persists per deployment)
+USE_SQLITE = True
+print("💿 Using SQLite for portfolio project")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
