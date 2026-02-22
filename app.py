@@ -551,6 +551,8 @@ def create_tables():
         content TEXT,
         image TEXT,
         music TEXT,
+        music_title TEXT,
+        tags TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
